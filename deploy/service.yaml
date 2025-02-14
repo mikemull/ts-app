@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tsapp-service
+  namespace: tsnext
+spec:
+  selector:
+    app: tsapp
+  type: NodePort
+  ports:
+  - name: tsapp-service-port
+    protocol: TCP
+    port: 3000
+    targetPort: 3000

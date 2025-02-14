@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tsapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+spec:
+  defaultBackend:
+    service:
+      name: tsapp-service
+      port:
+        number: 3000

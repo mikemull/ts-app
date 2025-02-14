@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ChangeEvent} from 'react'
 import './App.css'
 
 import Button from '@mui/material/Button';
@@ -20,16 +20,24 @@ interface TypedTreeItem extends TreeViewBaseItem {
   nodeType: string; 
 }
 
+type opSet = {
+  id: string
+  dataset_id: string
+  plot: string[]
+}
+
 type dataSet = {
-  id: string,
-  name: string,
-  description: string,
+  id: string
+  name: string
+  description: string
   series_cols: string[]
   max_length: number
+  ops: opSet[]
+  opset: opSet
 };
 
 type tsPoint = {
-  name: string,
+  name: string
   x: number
 };
 
@@ -57,6 +65,7 @@ function App() {
   const [datasets, setDatasets] = useState<dataSet[]>([]);
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
   const [dset, setDset] = useState<dataSet>();
+  const [opset, setOpset] = useState<opSet>();
   const [currts, setCurrts] = useState<string[]>(['MT_001']);
   const [offset, setOffset] = useState('0');
   const [limit, setLimit] = useState('1000');
@@ -85,7 +94,7 @@ function App() {
   
       try {
         // You can write the URL of your server or any other endpoint used for file upload
-        const result = await fetch('http://localhost:8000/files', {
+        const result = await fetch('/api/files', {
           method: 'POST',
           body: dsFormData,
         });
@@ -142,9 +151,9 @@ function App() {
     p: 2,
   };
 
-  //function onTreeClick(event: React.SyntheticEvent, itemIds: string[], isSelected: boolean[]) {
-  function onTreeClick(event: React.SyntheticEvent, itemIds: string[]) {
-    const tsIds: string[] = [];
+ 
+  function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
+    let tsIds: string[] = [];
 
     setSelectedItems(itemIds);
     console.log(itemIds);
@@ -152,36 +161,55 @@ function App() {
       const dsItem = datasets.find(ds => ds.id === item)
       if (dsItem === undefined) {
         // Time series ID
-        // alert(item);
         tsIds.push(item);
       } else {
         // Dataset ID
         if (dsItem) {
           setDset(dsItem);
           if (dsItem.id != dset?.id) {
-            setSelectedItems([item]);
+            console.log(dsItem);
             setExpandedItems([item]);
             setLimit(String(dsItem.max_length));
             setSliderUpper(dsItem.max_length);
             setSliderLower(0);
             setOffset("0");
+            if ((dsItem.opset !== undefined) && (dsItem.opset != null)) {
+              setSelectedItems([item].concat(dsItem.opset.plot));
+              tsIds = dsItem.opset.plot;
+              setTsData([]);
+            } else {
+              setSelectedItems([item]);
+              setTsData([]);
+            }
             break;
           }
         }
       }
     }
     setCurrts(tsIds.sort());
+    console.log(currts);
+  }
+
+  function onOffsetChange(event: ChangeEvent<HTMLInputElement>) {
+    setOffset(event.target.value);
+    setSliderLower(Number(event.target.value));
+  }
+
+  function onLimitChange(event: ChangeEvent<HTMLInputElement>) {
+    setLimit(event.target.value);
+    setSliderUpper(Number(sliderLower) + Number(event.target.value));
   }
 
   const handleExpandedItemsChange = (
-    event: React.SyntheticEvent,
+    _: React.SyntheticEvent,
     itemIds: string[],
   ) => {
     setExpandedItems(itemIds);
   };
 
+  // Get all of the datasets
   useEffect(() => {
-    fetch('http://localhost:8000/datasets')
+    fetch('/api/datasets')
        .then((response) => response.json())
        .then((data) => {
           console.log(data);
@@ -192,25 +220,95 @@ function App() {
        });
   }, []);
 
-  useEffect(() => {
-    let baseUrl = "http://localhost:8000";
-    let tsUrl = new URL("/ts", baseUrl);
+  // Fetch time series data
+  const fetchTsData = async () => {
 
-    if (dset === undefined || currts.length == 0) {
+    console.log(dset?.opset);
+    console.log(opset);
+    fetch(`/api/tsop/${dset?.opset.id}?offset=${offset}&limit=${limit}`)
+    .then((response) => response.json())
+    .then((data) => {
+        // console.log(data);
+        setTsData(data.data);
+    })
+    .catch((err) => {
+        console.log(err.message);
+    });
+  }
+
+  // Make or update opset
+  useEffect(() => {
+    console.log('opset effect');
+    if (dset === undefined) {
       return;
     }
 
-    console.log(dset?.id);
-    fetch(new URL(`/tsm/${dset?.id}:${currts.join(',')}?offset=${offset}&limit=${limit}`, tsUrl))
-    .then((response) => response.json())
-    .then((data) => {
-       // console.log(data);
-       setTsData(data.data);
-    })
-    .catch((err) => {
-       console.log(err.message);
-    });
-  }, [currts, offset, limit]);
+    if (dset.opset === undefined) {
+      // Make an opset
+      const fetchOpset = async () => {
+        const resp = await fetch('/api/opsets', {
+          method: 'post',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            "id": "0",
+            "dataset_id": dset.id,
+            "plot": currts
+          })
+        })
+        const jsonResp = await resp.json();
+        dset.opset = jsonResp;
+        setDset(dset);
+        setOpset(jsonResp);
+        console.log(dset);
+      }
+      if (dset.ops.length > 0) {
+        dset.opset = dset.ops[0];
+        setDset(dset);
+        setOpset(dset.ops[0]);
+        setSelectedItems(selectedItems.concat(dset.opset.plot));
+      } else {
+        fetchOpset();
+      }
+      //fetchOpset().then(() => {
+      //  fetchTsData();
+      //});
+
+    } else {
+      fetch(`/api/opsets/${dset?.opset.id}`, {
+        method: 'put',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          "id": dset?.opset.id,
+          "dataset_id": dset.id,
+          "plot": currts
+        })
+      })
+      .then((response) => response.json())
+      .then((data) => {
+          console.log(data);
+          dset.opset = data;
+          setDset(dset);
+          setOpset(data);
+          console.log(dset);
+          console.log(opset);
+      })
+      .catch((err) => {
+          console.log(err.message);
+      });
+    }
+  }, [currts, dset]);
+
+
+  useEffect(() => {
+    console.log('ts effect');
+    if (dset === undefined || dset.opset === undefined) {
+      return;
+    }
+
+    fetchTsData();
+
+  }, [offset, limit, opset, dset]);
+
 
   return (
     <>
@@ -221,7 +319,7 @@ function App() {
             Datasets
             </div>
             <div className='flex justify-items-end'>
-              <Button color="white" variant="outlined"  size="small" onClick={handleOpen}>Add</Button>
+              <Button variant="outlined"  size="small" onClick={handleOpen}>Add</Button>
             </div>
           </div>
           <div>
@@ -254,7 +352,7 @@ function App() {
               <LineChart data={tsdata} >
                 <XAxis dataKey="timestamp" angle={45} height={75}/>
                 <YAxis/>
-                {currts.map((ts, i) => <Line dataKey={`data.${ts}`} key={i} dot={false} stroke={COLORS[i % 8]}/>)}
+                {opset?.plot.map((ts, i) => <Line dataKey={`data.${ts}`} key={i} dot={false} stroke={COLORS[i % 8]}/>)}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -273,11 +371,11 @@ function App() {
               <input
                 name="offsetInput"
                 defaultValue={offset} value={offset}
-                onChange={e => setOffset(e.target.value)}/>
+                onChange={onOffsetChange}/>
             </label>
             <label> Limit:
               <input name="limitInput" defaultValue={limit} value={limit}
-              onChange={e => setLimit(e.target.value)}/>
+              onChange={onLimitChange}/>
             </label>
 
           </div>

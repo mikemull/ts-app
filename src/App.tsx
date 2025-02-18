@@ -5,6 +5,11 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { TreeViewBaseItem } from '@mui/x-tree-view/models';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
 import Modal from '@mui/material/Modal';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
@@ -41,18 +46,19 @@ type tsPoint = {
   x: number
 };
 
-function makeTreeItem(ds: dataSet): TypedTreeItem {
-  return {
-    id: ds.id,
-    label: ds.name,
-    nodeType: "ds",
-    children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
+function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
+  if (ds != undefined) {
+    return [{
+      id: "1",
+      label: "Columns",
+      nodeType: "ds",
+      children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
+    }]
+  } else {
+    return []
   }
 }
 
-function makeTreeItems(dslist: dataSet[]): TypedTreeItem[] {
-  return dslist.map(makeTreeItem);
-}
 
 const chartDivStyle = {
   padding: 20,
@@ -94,7 +100,7 @@ function App() {
   
       try {
         // You can write the URL of your server or any other endpoint used for file upload
-        const result = await fetch('/api/files', {
+        const result = await fetch('/tsapi/v1/files', {
           method: 'POST',
           body: dsFormData,
         });
@@ -151,39 +157,43 @@ function App() {
     p: 2,
   };
 
- 
+  const onDatasetClick = (
+    _: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    index: number,
+  ) => {
+    let tsIds: string[] = [];
+    const selectDset = datasets[index]
+    console.log(selectDset.name);
+    setDset(selectDset);
+    setExpandedItems(["1"]);
+    if ((selectDset.opset !== undefined) && (selectDset.opset != null)) {
+      setSelectedItems(["1"].concat(selectDset.opset.plot));
+      tsIds = selectDset.opset.plot;
+      setTsData([]);
+    } else {
+      setSelectedItems(["1"]);
+      setTsData([]);
+    }
+    
+    setLimit(String(selectDset.max_length));
+    setSliderUpper(selectDset.max_length);
+    setSliderLower(0);
+    setOffset("0");
+    setCurrts(tsIds.sort());
+  }
+
+
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
     let tsIds: string[] = [];
 
     setSelectedItems(itemIds);
     console.log(itemIds);
     for (const item of itemIds) {
-      const dsItem = datasets.find(ds => ds.id === item)
-      if (dsItem === undefined) {
+      if (item != "1") {
         // Time series ID
         tsIds.push(item);
       } else {
-        // Dataset ID
-        if (dsItem) {
-          setDset(dsItem);
-          if (dsItem.id != dset?.id) {
-            console.log(dsItem);
-            setExpandedItems([item]);
-            setLimit(String(dsItem.max_length));
-            setSliderUpper(dsItem.max_length);
-            setSliderLower(0);
-            setOffset("0");
-            if ((dsItem.opset !== undefined) && (dsItem.opset != null)) {
-              setSelectedItems([item].concat(dsItem.opset.plot));
-              tsIds = dsItem.opset.plot;
-              setTsData([]);
-            } else {
-              setSelectedItems([item]);
-              setTsData([]);
-            }
-            break;
-          }
-        }
+        // Select all in category
       }
     }
     setCurrts(tsIds.sort());
@@ -209,7 +219,7 @@ function App() {
 
   // Get all of the datasets
   useEffect(() => {
-    fetch('/api/datasets')
+    fetch('/tsapi/v1/datasets')
        .then((response) => response.json())
        .then((data) => {
           console.log(data);
@@ -225,7 +235,7 @@ function App() {
 
     console.log(dset?.opset);
     console.log(opset);
-    fetch(`/api/tsop/${dset?.opset.id}?offset=${offset}&limit=${limit}`)
+    fetch(`/tsapi/v1/tsop/${dset?.opset.id}?offset=${offset}&limit=${limit}`)
     .then((response) => response.json())
     .then((data) => {
         // console.log(data);
@@ -246,7 +256,7 @@ function App() {
     if (dset.opset === undefined) {
       // Make an opset
       const fetchOpset = async () => {
-        const resp = await fetch('/api/opsets', {
+        const resp = await fetch('/tsapi/v1/opsets', {
           method: 'post',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
@@ -274,7 +284,7 @@ function App() {
       //});
 
     } else {
-      fetch(`/api/opsets/${dset?.opset.id}`, {
+      fetch(`/tsapi/v1/opsets/${dset?.opset.id}`, {
         method: 'put',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
@@ -334,9 +344,19 @@ function App() {
                 overflow: "hidden",
                 overflowY: "scroll"
                }}>
+              <List>
+              {datasets.map((ds, idx) =>
+                <ListItem disablePadding>
+                  <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}>
+                    <ListItemText primary={ds.name}/>
+                  </ListItemButton>
+                </ListItem>
+              )} 
+              </List>
+              <Divider/>
               <RichTreeView
                 multiSelect
-                items={makeTreeItems(datasets)}
+                items={dset ? makeTreeItem(dset) : []}
                 checkboxSelection
                 selectedItems={selectedItems}
                 expandedItems={expandedItems}

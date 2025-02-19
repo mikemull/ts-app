@@ -184,7 +184,7 @@ function App() {
 
 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
-    let tsIds: string[] = [];
+    const tsIds: string[] = [];
 
     setSelectedItems(itemIds);
     console.log(itemIds);
@@ -344,14 +344,14 @@ function App() {
                 overflow: "hidden",
                 overflowY: "scroll"
                }}>
-              <List>
-              {datasets.map((ds, idx) =>
-                <ListItem disablePadding>
-                  <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}>
-                    <ListItemText primary={ds.name}/>
-                  </ListItemButton>
-                </ListItem>
-              )} 
+              <List  sx={{bgcolor: '#3C3C3C'}}>
+                {datasets.map((ds, idx) =>
+                  <ListItem disablePadding>
+                    <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}>
+                      <ListItemText primary={ds.name}/>
+                    </ListItemButton>
+                  </ListItem>
+                )} 
               </List>
               <Divider/>
               <RichTreeView

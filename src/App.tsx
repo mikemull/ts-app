@@ -4,6 +4,8 @@ import './App.css'
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { TreeViewBaseItem } from '@mui/x-tree-view/models';
+import { TreeItem2, TreeItem2Props } from '@mui/x-tree-view/TreeItem2';
+import { useTreeItem2Utils } from '@mui/x-tree-view/hooks';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -15,6 +17,7 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
 
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
+// const catIds = new Set<string>(['1', '2', '3']);
 
 interface DatasetModalData {
   dataset_name: string;
@@ -36,6 +39,7 @@ type dataSet = {
   name: string
   description: string
   series_cols: string[]
+  timestamp_cols: string[]
   max_length: number
   ops: opSet[]
   opset: opSet
@@ -46,14 +50,45 @@ type tsPoint = {
   x: number
 };
 
+
+function isPlottable(ds: dataSet | undefined, itemId: string): boolean {
+  return findItemParent(ds, itemId) == "2";
+}
+
+
+function findItemParent(ds: dataSet | undefined, itemId: string): string | null {
+
+  if (ds != undefined) {
+    if (ds.series_cols.find((id) => id === itemId) != undefined) {
+      return "2";
+    } else if (ds.timestamp_cols.find((id) => id === itemId) != undefined) {
+      return "1";
+    } else {
+      return null;
+    }
+  } else {
+    return null;
+  }
+
+}
+
+
 function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
   if (ds != undefined) {
-    return [{
+    return [
+      {
       id: "1",
-      label: "Columns",
+      label: "Time Columns",
       nodeType: "ds",
-      children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
-    }]
+      children: ds.timestamp_cols.map((s_id) => ({id: s_id, label: s_id}))
+      },
+      {
+        id: "2",
+        label: "Numeric Columns",
+        nodeType: "ds",
+        children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
+      }
+    ]
   } else {
     return []
   }
@@ -96,7 +131,6 @@ function App() {
       const dsFormData = new FormData();
       dsFormData.append('name', modalData.dataset_name);
       dsFormData.append('file', file);
-      console.log(dsFormData);
   
       try {
         // You can write the URL of your server or any other endpoint used for file upload
@@ -106,7 +140,6 @@ function App() {
         });
   
         const data = await result.json();
-  
         console.log(data);
       } catch (error) {
         console.error(error);
@@ -130,7 +163,6 @@ function App() {
   const handleClose = () => setAddVisible(false);
 
   const onRangeChange = (value: number | number[]) => {
-    // console.log('onChange: ', value);
     if (Array.isArray(value)) {
       setSliderLower(value[0]);
       setSliderUpper(value[1]);
@@ -138,7 +170,6 @@ function App() {
   };
   
   const onRangeChangeComplete = (value: number | number[]) => {
-    console.log('onChangeComplete: ', value);
     if (Array.isArray(value)) {
       setLimit(String(sliderUpper - sliderLower));
       setOffset(String(sliderLower));
@@ -163,15 +194,14 @@ function App() {
   ) => {
     let tsIds: string[] = [];
     const selectDset = datasets[index]
-    console.log(selectDset.name);
     setDset(selectDset);
     setExpandedItems(["1"]);
     if ((selectDset.opset !== undefined) && (selectDset.opset != null)) {
-      setSelectedItems(["1"].concat(selectDset.opset.plot));
+      setSelectedItems(["1"].concat(selectDset.timestamp_cols[0]).concat(selectDset.opset.plot));
       tsIds = selectDset.opset.plot;
       setTsData([]);
     } else {
-      setSelectedItems(["1"]);
+      setSelectedItems(["1"].concat(selectDset.timestamp_cols[0]));
       setTsData([]);
     }
     
@@ -184,20 +214,45 @@ function App() {
 
 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
-    const tsIds: string[] = [];
+    let tsIds: string[] = [];
+    let allSeries = false;
 
-    setSelectedItems(itemIds);
     console.log(itemIds);
+    const selSet = new Set<string>(itemIds);
+
+    // First, check for top-level selections
     for (const item of itemIds) {
-      if (item != "1") {
-        // Time series ID
-        tsIds.push(item);
-      } else {
-        // Select all in category
+      // Select all in category
+      if (dset != undefined) {
+        if (item == "1") {
+          for (const col of dset.timestamp_cols) {
+            selSet.add(col);
+          }
+        } 
+        if (item == "2") {
+          for (const col of dset.series_cols) {
+            selSet.add(col);
+          }
+          tsIds = dset.series_cols;
+          allSeries = true;
+        }
       }
     }
+
+    if (!allSeries) {
+      for (const item of itemIds) {
+        // Time series ID
+        if (isPlottable(dset, item)) {
+          tsIds.push(item);
+        }
+      }
+    }
+ 
+    console.log(selSet);
+    setSelectedItems(Array.from(selSet));
+    console.log(tsIds);
+    console.log(selectedItems);
     setCurrts(tsIds.sort());
-    console.log(currts);
   }
 
   function onOffsetChange(event: ChangeEvent<HTMLInputElement>) {
@@ -232,13 +287,9 @@ function App() {
 
   // Fetch time series data
   const fetchTsData = async () => {
-
-    console.log(dset?.opset);
-    console.log(opset);
     fetch(`/tsapi/v1/tsop/${dset?.opset.id}?offset=${offset}&limit=${limit}`)
     .then((response) => response.json())
     .then((data) => {
-        // console.log(data);
         setTsData(data.data);
     })
     .catch((err) => {
@@ -248,7 +299,6 @@ function App() {
 
   // Make or update opset
   useEffect(() => {
-    console.log('opset effect');
     if (dset === undefined) {
       return;
     }
@@ -295,12 +345,9 @@ function App() {
       })
       .then((response) => response.json())
       .then((data) => {
-          console.log(data);
           dset.opset = data;
           setDset(dset);
           setOpset(data);
-          console.log(dset);
-          console.log(opset);
       })
       .catch((err) => {
           console.log(err.message);
@@ -310,7 +357,6 @@ function App() {
 
 
   useEffect(() => {
-    console.log('ts effect');
     if (dset === undefined || dset.opset === undefined) {
       return;
     }
@@ -319,6 +365,21 @@ function App() {
 
   }, [offset, limit, opset, dset]);
 
+
+  function CustomTreeItem(props: TreeItem2Props) {
+    const { status } = useTreeItem2Utils({
+      itemId: props.itemId,
+      children: props.children,
+    });
+  
+    return (
+      <TreeItem2
+        {...props}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        slotProps={{ checkbox: { visible: !status.expandable } as any }}
+      />
+    );
+  }
 
   return (
     <>
@@ -344,7 +405,7 @@ function App() {
                 overflow: "hidden",
                 overflowY: "scroll"
                }}>
-              <List  sx={{bgcolor: '#3C3C3C'}}>
+              <List  sx={{bgcolor: '#3C3C4C'}}>
                 {datasets.map((ds, idx) =>
                   <ListItem disablePadding>
                     <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}>
@@ -358,10 +419,13 @@ function App() {
                 multiSelect
                 items={dset ? makeTreeItem(dset) : []}
                 checkboxSelection
+                defaultExpandedItems={['1', '2']}
                 selectedItems={selectedItems}
                 expandedItems={expandedItems}
                 onExpandedItemsChange={handleExpandedItemsChange}
-                onSelectedItemsChange={onTreeClick}/>
+                onSelectedItemsChange={onTreeClick}
+                slots={{ item: CustomTreeItem }}
+              />
             </Box>
           </div>
         </div>

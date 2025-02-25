@@ -17,7 +17,7 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
 
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
-// const catIds = new Set<string>(['1', '2', '3']);
+const catIds = new Set<string>(['ts_col_time', 'ts_col_series', 'ts_col_other']);
 
 interface DatasetModalData {
   dataset_name: string;
@@ -52,7 +52,7 @@ type tsPoint = {
 
 
 function isPlottable(ds: dataSet | undefined, itemId: string): boolean {
-  return findItemParent(ds, itemId) == "2";
+  return findItemParent(ds, itemId) == "ts_col_series";
 }
 
 
@@ -60,9 +60,9 @@ function findItemParent(ds: dataSet | undefined, itemId: string): string | null 
 
   if (ds != undefined) {
     if (ds.series_cols.find((id) => id === itemId) != undefined) {
-      return "2";
+      return "ts_col_series";
     } else if (ds.timestamp_cols.find((id) => id === itemId) != undefined) {
-      return "1";
+      return "ts_col_time";
     } else {
       return null;
     }
@@ -77,13 +77,13 @@ function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
   if (ds != undefined) {
     return [
       {
-      id: "1",
+      id: "ts_col_time",
       label: "Time Columns",
       nodeType: "ds",
       children: ds.timestamp_cols.map((s_id) => ({id: s_id, label: s_id}))
       },
       {
-        id: "2",
+        id: "ts_col_series",
         label: "Numeric Columns",
         nodeType: "ds",
         children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
@@ -98,8 +98,8 @@ function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
 const chartDivStyle = {
   padding: 20,
   width: 'calc(100% - 25px)',
-  height: 300,
-  minHeight: 300
+  height: 400,
+  minHeight: 400
 };
 
 function App() {
@@ -107,7 +107,7 @@ function App() {
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
   const [dset, setDset] = useState<dataSet>();
   const [opset, setOpset] = useState<opSet>();
-  const [currts, setCurrts] = useState<string[]>(['MT_001']);
+  const [currts, setCurrts] = useState<string[]>([]);
   const [offset, setOffset] = useState('0');
   const [limit, setLimit] = useState('1000');
   const [sliderUpper, setSliderUpper] = useState(1000);
@@ -195,13 +195,13 @@ function App() {
     let tsIds: string[] = [];
     const selectDset = datasets[index]
     setDset(selectDset);
-    setExpandedItems(["1"]);
+    setExpandedItems(["ts_col_time"]);
     if ((selectDset.opset !== undefined) && (selectDset.opset != null)) {
-      setSelectedItems(["1"].concat(selectDset.timestamp_cols[0]).concat(selectDset.opset.plot));
+      setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.opset.plot));
       tsIds = selectDset.opset.plot;
       setTsData([]);
     } else {
-      setSelectedItems(["1"].concat(selectDset.timestamp_cols[0]));
+      setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]));
       setTsData([]);
     }
     
@@ -224,12 +224,12 @@ function App() {
     for (const item of itemIds) {
       // Select all in category
       if (dset != undefined) {
-        if (item == "1") {
+        if (item == "ts_col_time") {
           for (const col of dset.timestamp_cols) {
             selSet.add(col);
           }
         } 
-        if (item == "2") {
+        if (item == "ts_col_series") {
           for (const col of dset.series_cols) {
             selSet.add(col);
           }
@@ -383,10 +383,10 @@ function App() {
 
   return (
     <>
-      <div className="flex justify-start items-center w-full">
+      <div className="flex justify-start w-full">
         <div className='bg-slate-700'>
           <div className='flex justify-between p-2'>
-            <div className='flex items-center justify-center text-l font-bold'>
+            <div className='flex justify-center text-l font-bold'>
             Datasets
             </div>
             <div className='flex justify-items-end'>
@@ -419,7 +419,7 @@ function App() {
                 multiSelect
                 items={dset ? makeTreeItem(dset) : []}
                 checkboxSelection
-                defaultExpandedItems={['1', '2']}
+                defaultExpandedItems={Array.from(catIds)}
                 selectedItems={selectedItems}
                 expandedItems={expandedItems}
                 onExpandedItemsChange={handleExpandedItemsChange}
@@ -439,9 +439,8 @@ function App() {
                 {opset?.plot.map((ts, i) => <Line dataKey={`data.${ts}`} key={i} dot={false} stroke={COLORS[i % 8]}/>)}
               </LineChart>
             </ResponsiveContainer>
-          </div>
 
-          <div>
+            <div>
             <Slider 
               range={{ draggableTrack: true }}
               min={0}
@@ -462,7 +461,9 @@ function App() {
               onChange={onLimitChange}/>
             </label>
 
+            </div>            
           </div>
+
         </div>
       </div>
 

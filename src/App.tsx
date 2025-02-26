@@ -22,6 +22,7 @@ const catIds = new Set<string>(['ts_col_time', 'ts_col_series', 'ts_col_other'])
 interface DatasetModalData {
   dataset_name: string;
   filepath: string;
+  upload_type: string;
 }
 
 interface TypedTreeItem extends TreeViewBaseItem {
@@ -113,7 +114,8 @@ function App() {
   const [sliderUpper, setSliderUpper] = useState(1000);
   const [sliderLower, setSliderLower] = useState(0);
   const [addVisible, setAddVisible] = useState(false);
-  const [modalData, setModalData] = useState<DatasetModalData>({ dataset_name: '', filepath: '' });
+  const [importVisible, setImportVisible] = useState(false);
+  const [modalData, setModalData] = useState<DatasetModalData>({ dataset_name: '', filepath: '', upload_type: '' });
   const [file, setFile] = useState<File | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -131,6 +133,7 @@ function App() {
       const dsFormData = new FormData();
       dsFormData.append('name', modalData.dataset_name);
       dsFormData.append('file', file);
+      dsFormData.append('upload_type', modalData.upload_type);
   
       try {
         // You can write the URL of your server or any other endpoint used for file upload
@@ -147,9 +150,9 @@ function App() {
     }
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>, uptype: string) => {
     const { name, value } = event.target;
-    setModalData({ ...modalData, [name]: value });
+    setModalData({ ...modalData, [name]: value, upload_type: uptype });
     console.log(modalData);
   };
 
@@ -157,10 +160,15 @@ function App() {
     event.preventDefault();
     console.log(modalData); // Handle form submission here
     setAddVisible(false);
+    setImportVisible(false);
   };
 
-  const handleOpen = () => setAddVisible(true);
-  const handleClose = () => setAddVisible(false);
+  const handleOpenAdd = () => setAddVisible(true);
+  const handleCloseAdd = () => setAddVisible(false);
+
+  const handleOpenImport = () => setImportVisible(true);
+  const handleCloseImport = () => setImportVisible(false);
+
 
   const onRangeChange = (value: number | number[]) => {
     if (Array.isArray(value)) {
@@ -390,7 +398,8 @@ function App() {
             Datasets
             </div>
             <div className='flex justify-items-end'>
-              <Button variant="outlined"  size="small" onClick={handleOpen}>Add</Button>
+              <Button variant="outlined"  size="small" onClick={handleOpenAdd} sx={{margin: "2px 5px 2px 5px"}}>Add</Button>
+              <Button variant="outlined"  size="small" onClick={handleOpenImport} sx={{margin: "2px 5px 2px 5px"}}>Import</Button>
             </div>
           </div>
           <div>
@@ -470,7 +479,7 @@ function App() {
       <div>
         <Modal
           open={addVisible}
-          onClose={handleClose}
+          onClose={handleCloseAdd}
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
         >
@@ -478,7 +487,28 @@ function App() {
             <form className="mt-8 mb-2 w-80 max-w-screen-lg sm:w-120" onSubmit={handleSubmit}>
               <div className="mb-1 flex flex-col gap-3">
                 <label htmlFor="name">Dataset Name:</label>
-                <input type="text" id="dataset_name" name="dataset_name" value={modalData.dataset_name} onChange={handleChange} />
+                <input type="text" id="dataset_name" name="dataset_name" value={modalData.dataset_name} onChange={(event) => {handleChange(event, "add")}} />
+
+                <input id="file" type="file" accept=".parquet" onChange={handleFileChange} />
+
+                <button type="submit" onClick={handleUpload}>Submit</button>
+              </div>
+            </form>
+          </Box>
+        </Modal>
+      </div>
+      <div>
+        <Modal
+          open={importVisible}
+          onClose={handleCloseImport}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={formStyle}>
+            <form className="mt-8 mb-2 w-80 max-w-screen-lg sm:w-120" onSubmit={handleSubmit}>
+              <div className="mb-1 flex flex-col gap-3">
+                <label htmlFor="name">Dataset Name:</label>
+                <input type="text" id="dataset_name" name="dataset_name" value={modalData.dataset_name} onChange={(event) => {handleChange(event, "import")}} />
 
                 <input id="file" type="file" onChange={handleFileChange} />
 
@@ -487,7 +517,7 @@ function App() {
             </form>
           </Box>
         </Modal>
-      </div>
+      </div>      
     </>
   )
 }

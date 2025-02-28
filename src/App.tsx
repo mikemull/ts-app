@@ -136,7 +136,6 @@ function App() {
       dsFormData.append('upload_type', modalData.upload_type);
   
       try {
-        // You can write the URL of your server or any other endpoint used for file upload
         const result = await fetch('/tsapi/v1/files', {
           method: 'POST',
           body: dsFormData,

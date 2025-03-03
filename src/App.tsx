@@ -12,39 +12,20 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
-import Modal from '@mui/material/Modal';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
+
+import { dataSet, opSet } from './types/dataset';
+import { ImportDialog } from './components/importdialog/ImportDialog';
 
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
 const catIds = new Set<string>(['ts_col_time', 'ts_col_series', 'ts_col_other']);
 
-interface DatasetModalData {
-  dataset_name: string;
-  filepath: string;
-  upload_type: string;
-}
 
 interface TypedTreeItem extends TreeViewBaseItem {
   nodeType: string; 
 }
 
-type opSet = {
-  id: string
-  dataset_id: string
-  plot: string[]
-}
-
-type dataSet = {
-  id: string
-  name: string
-  description: string
-  series_cols: string[]
-  timestamp_cols: string[]
-  max_length: number
-  ops: opSet[]
-  opset: opSet
-};
 
 type tsPoint = {
   name: string
@@ -115,58 +96,14 @@ function App() {
   const [sliderLower, setSliderLower] = useState(0);
   const [addVisible, setAddVisible] = useState(false);
   const [importVisible, setImportVisible] = useState(false);
-  const [modalData, setModalData] = useState<DatasetModalData>({ dataset_name: '', filepath: '', upload_type: '' });
-  const [file, setFile] = useState<File | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (file) {
-      console.log('Uploading file...');
-  
-      const dsFormData = new FormData();
-      dsFormData.append('name', modalData.dataset_name);
-      dsFormData.append('file', file);
-      dsFormData.append('upload_type', modalData.upload_type);
-  
-      try {
-        const result = await fetch('/tsapi/v1/files', {
-          method: 'POST',
-          body: dsFormData,
-        });
-  
-        const data = await result.json();
-        console.log(data);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  };
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>, uptype: string) => {
-    const { name, value } = event.target;
-    setModalData({ ...modalData, [name]: value, upload_type: uptype });
-    console.log(modalData);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    console.log(modalData); // Handle form submission here
-    setAddVisible(false);
-    setImportVisible(false);
-  };
+  const handleCloseImport = () => setImportVisible(false);
+  const handleOpenImport = () => setImportVisible(true);
 
   const handleOpenAdd = () => setAddVisible(true);
   const handleCloseAdd = () => setAddVisible(false);
-
-  const handleOpenImport = () => setImportVisible(true);
-  const handleCloseImport = () => setImportVisible(false);
 
 
   const onRangeChange = (value: number | number[]) => {
@@ -183,17 +120,13 @@ function App() {
     }
   };
 
-  const formStyle = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 400,
-    bgcolor: 'rgb(51 65 85)',
-    border: '2px solid #777',
-    boxShadow: 24,
-    p: 2,
-  };
+  const addDataset = (
+    newDataset: dataSet
+  ) => {
+    console.log('Adding');
+    setDatasets([...datasets, newDataset]);
+  }
+
 
   const onDatasetClick = (
     _: React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -284,7 +217,6 @@ function App() {
     fetch('/tsapi/v1/datasets')
        .then((response) => response.json())
        .then((data) => {
-          console.log(data);
           setDatasets(data);
        })
        .catch((err) => {
@@ -475,48 +407,8 @@ function App() {
         </div>
       </div>
 
-      <div>
-        <Modal
-          open={addVisible}
-          onClose={handleCloseAdd}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
-        >
-          <Box sx={formStyle}>
-            <form className="mt-8 mb-2 w-80 max-w-screen-lg sm:w-120" onSubmit={handleSubmit}>
-              <div className="mb-1 flex flex-col gap-3">
-                <label htmlFor="name">Dataset Name:</label>
-                <input type="text" id="dataset_name" name="dataset_name" value={modalData.dataset_name} onChange={(event) => {handleChange(event, "add")}} />
-
-                <input id="file" type="file" accept=".parquet" onChange={handleFileChange} />
-
-                <button type="submit" onClick={handleUpload}>Submit</button>
-              </div>
-            </form>
-          </Box>
-        </Modal>
-      </div>
-      <div>
-        <Modal
-          open={importVisible}
-          onClose={handleCloseImport}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
-        >
-          <Box sx={formStyle}>
-            <form className="mt-8 mb-2 w-80 max-w-screen-lg sm:w-120" onSubmit={handleSubmit}>
-              <div className="mb-1 flex flex-col gap-3">
-                <label htmlFor="name">Dataset Name:</label>
-                <input type="text" id="dataset_name" name="dataset_name" value={modalData.dataset_name} onChange={(event) => {handleChange(event, "import")}} />
-
-                <input id="file" type="file" onChange={handleFileChange} />
-
-                <button type="submit" onClick={handleUpload}>Submit</button>
-              </div>
-            </form>
-          </Box>
-        </Modal>
-      </div>      
+      <ImportDialog open={addVisible} uploadType="add" onClose={handleCloseAdd} addDataset={addDataset}></ImportDialog>
+      <ImportDialog open={importVisible} uploadType="import" onClose={handleCloseImport} addDataset={addDataset}></ImportDialog>
     </>
   )
 }

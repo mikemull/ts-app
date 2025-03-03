@@ -32,12 +32,11 @@ interface ImportDialogProps {
 interface DatasetModalData {
   dataset_name: string;
   filepath: string;
-  upload_type: string;
 }
 
 export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, onClose, addDataset }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [modalData, setModalData] = useState<DatasetModalData>({ dataset_name: '', filepath: '', upload_type: '' });
+  const [modalData, setModalData] = useState<DatasetModalData>({ dataset_name: '', filepath: ''});
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -45,30 +44,36 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
     }
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, uptype: string) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
-    setModalData({ ...modalData, [name]: value, upload_type: uptype });
+    setModalData({ ...modalData, [name]: value});
     console.log(modalData);
   };
   
-  const handleUpload = async () => {
+  const handleUpload = async (event: React.MouseEvent<HTMLButtonElement>, upload_type: string) => {
     if (file) {
+      event.preventDefault();
       console.log('Uploading file...');
   
       const dsFormData = new FormData();
       dsFormData.append('name', modalData.dataset_name);
       dsFormData.append('file', file);
-      dsFormData.append('upload_type', modalData.upload_type);
+      dsFormData.append('upload_type', upload_type);
   
       try {
         const result = await fetch('/tsapi/v1/files', {
           method: 'POST',
           body: dsFormData,
         });
-  
+
+        if (!result.ok) {
+          const error = await result.json();
+          throw new Error(`HTTP error! status: ${result.status} - ${error.detail}`);
+        }
+
         const data = await result.json();
-        console.log(data);
-        addDataset(data);
+        addDataset(data as dataSet);
+        onClose();
       } catch (error) {
         alert(error);
       }
@@ -108,13 +113,13 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
             type="text"
             fullWidth
             variant="standard"
-            onChange={(event) => {handleChange(event, uploadType)}}
+            onChange={handleChange}
           />
           <TextField type="file" onChange={handleFileChange} />
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit"  onClick={handleUpload}>Import</Button>
+          <Button type="submit" onClick={(event) => handleUpload(event, uploadType)}>Import</Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

@@ -57,7 +57,7 @@ function findItemParent(ds: dataSet | undefined, itemId: string): string | null 
 
 function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
   if (ds != undefined) {
-    return [
+    const groups = [
       {
       id: "ts_col_time",
       label: "Time Columns",
@@ -71,6 +71,15 @@ function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
         children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
       }
     ]
+    if (ds.other_cols.length > 0) {
+      groups.push({
+        id: "ts_other_series",
+        label: "Other Columns",
+        nodeType: "ds",
+        children: ds.other_cols.map((s_id) => ({id: s_id, label: s_id}))
+      });
+    }
+    return groups;
   } else {
     return []
   }

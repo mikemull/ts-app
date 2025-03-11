@@ -12,6 +12,7 @@ export type dataSet = {
     description: string
     series_cols: string[]
     timestamp_cols: string[]
+    other_cols: string[]
     max_length: number
     ops: opSet[]
     opset: opSet

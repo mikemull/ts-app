@@ -98,6 +98,7 @@ function App() {
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
   const [dset, setDset] = useState<dataSet>();
   const [opset, setOpset] = useState<opSet>();
+  const [selectedDsetIndex, setSelectedDsetIndex] = useState(1);
   const [currts, setCurrts] = useState<string[]>([]);
   const [offset, setOffset] = useState('0');
   const [limit, setLimit] = useState('1000');
@@ -144,6 +145,7 @@ function App() {
     let tsIds: string[] = [];
     const selectDset = datasets[index]
     setDset(selectDset);
+    setSelectedDsetIndex(index);
     setExpandedItems(["ts_col_time"]);
     if ((selectDset.opset !== undefined) && (selectDset.opset != null)) {
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.opset.plot));
@@ -357,7 +359,7 @@ function App() {
               <List  sx={{bgcolor: '#3C3C4C'}}>
                 {datasets.map((ds, idx) =>
                   <ListItem disablePadding>
-                    <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}>
+                    <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}  selected={selectedDsetIndex === idx}>
                       <ListItemText primary={ds.name}/>
                     </ListItemButton>
                   </ListItem>

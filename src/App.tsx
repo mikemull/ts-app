@@ -99,7 +99,7 @@ const chartDivStyle = {
 function App() {
   const [datasets, setDatasets] = useState<dataSet[]>([]);
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
-  const [dset, setDset] = useState<dataSet>();
+  const [currentDataset, setCurrentDataset] = useState<dataSet>();
   const [opset, setOpset] = useState<opSet>();
   const [selectedDsetIndex, setSelectedDsetIndex] = useState(1);
   const [currts, setCurrts] = useState<string[]>([]);
@@ -111,6 +111,7 @@ function App() {
   const [importVisible, setImportVisible] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [seriesColors, setSeriesColors] = useState<{ [key: string]: string }>({});
 
   const handleCloseImport = () => setImportVisible(false);
   const handleOpenImport = () => setImportVisible(true);
@@ -147,18 +148,28 @@ function App() {
   ) => {
     let tsIds: string[] = [];
     const selectDset = datasets[index]
-    setDset(selectDset);
+    setCurrentDataset(selectDset);
     setSelectedDsetIndex(index);
     setExpandedItems(["ts_col_time", "ts_col_series"]);
-    if ((selectDset.opset !== undefined) && (selectDset.opset != null)) {
-      setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.opset.plot));
-      tsIds = selectDset.opset.plot;
+    if (selectDset.ops.length > 0) { //((selectDset.opset !== undefined) && (selectDset.opset != null)) {
+      console.log("selectDset.ops", selectDset.ops);
+      setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.ops[0].plot));
+      tsIds = selectDset.ops[0].plot;
+      setOpset(selectDset.ops[0]);
       setTsData([]);
     } else {
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]));
       setTsData([]);
     }
     
+    const newColors: { [key: string]: string } = {};
+    let colorIndex = 0;
+    for (const ts of tsIds) {
+      newColors[ts] = COLORS[colorIndex % COLORS.length];
+      colorIndex++;
+    }
+    setSeriesColors(newColors);
+
     setLimit(String(selectDset.max_length));
     setSliderUpper(selectDset.max_length);
     setSliderLower(0);
@@ -177,17 +188,17 @@ function App() {
     // First, check for top-level selections
     for (const item of itemIds) {
       // Select all in category
-      if (dset != undefined) {
+      if (currentDataset != undefined) {
         if (item == "ts_col_time") {
-          for (const col of dset.timestamp_cols) {
+          for (const col of currentDataset.timestamp_cols) {
             selSet.add(col);
           }
         } 
         if (item == "ts_col_series") {
-          for (const col of dset.series_cols) {
+          for (const col of currentDataset.series_cols) {
             selSet.add(col);
           }
-          tsIds = dset.series_cols;
+          tsIds = currentDataset.series_cols;
           allSeries = true;
         }
       }
@@ -196,7 +207,7 @@ function App() {
     if (!allSeries) {
       for (const item of itemIds) {
         // Time series ID
-        if (isPlottable(dset, item)) {
+        if (isPlottable(currentDataset, item)) {
           tsIds.push(item);
         }
       }
@@ -240,45 +251,45 @@ function App() {
 
   // Make or update opset and fetch data
   useEffect(() => {
-    if (dset === undefined) {
+    if (currentDataset === undefined) {
       return;
     }
 
     const updateOpsetAndFetchData = async () => {
-      if (dset.opset === undefined) {
+      if (currentDataset.ops.length === 0) {
         // Make an opset
         const resp = await fetch('/tsapi/v1/opsets', {
           method: 'post',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
             "id": "0",
-            "dataset_id": dset.id,
+            "dataset_id": currentDataset.id,
             "plot": currts
           })
         });
         const jsonResp = await resp.json();
-        dset.opset = jsonResp;
-        setDset(dset);
+        currentDataset.ops.push(jsonResp);
+        setCurrentDataset(currentDataset);
         setOpset(jsonResp);
       } else {
         // Update existing opset
-        const resp = await fetch(`/tsapi/v1/opsets/${dset.opset.id}`, {
+        const resp = await fetch(`/tsapi/v1/opsets/${currentDataset.ops[0].id}`, {
           method: 'put',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
-            "id": dset.opset.id,
-            "dataset_id": dset.id,
+            "id": currentDataset.ops[0].id,
+            "dataset_id": currentDataset.id,
             "plot": currts
           })
         });
         const jsonResp = await resp.json();
-        dset.opset = jsonResp;
-        setDset(dset);
+        currentDataset.ops[0] = jsonResp;
+        setCurrentDataset(currentDataset);
         setOpset(jsonResp);
       }
 
       // Fetch time series data
-      const dataResp = await fetch(`/tsapi/v1/tsop/${dset.opset.id}?offset=${offset}&limit=${limit}`);
+      const dataResp = await fetch(`/tsapi/v1/tsop/${currentDataset.ops[0].id}?offset=${offset}&limit=${limit}`);
       const data = await dataResp.json();
       setTsData(data.data);
     };
@@ -286,7 +297,7 @@ function App() {
     updateOpsetAndFetchData().catch(err => {
       console.log(err.message);
     });
-  }, [currts, dset, offset, limit]);
+  }, [currts, currentDataset, offset, limit]);
 
 
   function CustomTreeItem(props: TreeItem2Props) {
@@ -347,7 +358,7 @@ function App() {
               <Divider/>
               <RichTreeView
                 multiSelect
-                items={dset ? makeTreeItem(dset) : []}
+                items={currentDataset ? makeTreeItem(currentDataset) : []}
                 checkboxSelection
                 defaultExpandedItems={Array.from(catIds)}
                 selectedItems={selectedItems}
@@ -420,7 +431,7 @@ function App() {
                     dataKey={`data.${ts}`} 
                     key={i} 
                     dot={false} 
-                    stroke={COLORS[i % 8]}
+                    stroke={seriesColors[ts] || COLORS[0]}
                     strokeWidth={2}
                     name={ts}
                   />
@@ -432,7 +443,7 @@ function App() {
               <Slider 
                 range={{ draggableTrack: true }}
                 min={0}
-                max={dset?.max_length}
+                max={currentDataset?.max_length}
                 defaultValue={[Number(offset), Number(limit)]} 
                 value={[sliderLower, sliderUpper]} 
                 onChange={onRangeChange}

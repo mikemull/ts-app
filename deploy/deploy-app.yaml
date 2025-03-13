@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: "tsapp-1"
-        image: "us-west1-docker.pkg.dev/website-410522/tsnext/tsapp:latest"
+        image: "us-central1-docker.pkg.dev/website-410522/tsnext/tsapp:latest"
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3

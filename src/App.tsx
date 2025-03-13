@@ -12,7 +12,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
 
 import { dataSet, opSet } from './types/dataset';
@@ -90,7 +90,10 @@ const chartDivStyle = {
   padding: 20,
   width: 'calc(100% - 25px)',
   height: 400,
-  minHeight: 400
+  minHeight: 400,
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
 };
 
 function App() {
@@ -146,7 +149,7 @@ function App() {
     const selectDset = datasets[index]
     setDset(selectDset);
     setSelectedDsetIndex(index);
-    setExpandedItems(["ts_col_time"]);
+    setExpandedItems(["ts_col_time", "ts_col_series"]);
     if ((selectDset.opset !== undefined) && (selectDset.opset != null)) {
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.opset.plot));
       tsIds = selectDset.opset.plot;
@@ -235,27 +238,15 @@ function App() {
        });
   }, []);
 
-  // Fetch time series data
-  const fetchTsData = async () => {
-    fetch(`/tsapi/v1/tsop/${dset?.opset.id}?offset=${offset}&limit=${limit}`)
-    .then((response) => response.json())
-    .then((data) => {
-        setTsData(data.data);
-    })
-    .catch((err) => {
-        console.log(err.message);
-    });
-  }
-
-  // Make or update opset
+  // Make or update opset and fetch data
   useEffect(() => {
     if (dset === undefined) {
       return;
     }
 
-    if (dset.opset === undefined) {
-      // Make an opset
-      const fetchOpset = async () => {
+    const updateOpsetAndFetchData = async () => {
+      if (dset.opset === undefined) {
+        // Make an opset
         const resp = await fetch('/tsapi/v1/opsets', {
           method: 'post',
           headers: {'Content-Type':'application/json'},
@@ -264,56 +255,38 @@ function App() {
             "dataset_id": dset.id,
             "plot": currts
           })
-        })
+        });
         const jsonResp = await resp.json();
         dset.opset = jsonResp;
         setDset(dset);
         setOpset(jsonResp);
-        console.log(dset);
-      }
-      if (dset.ops.length > 0) {
-        dset.opset = dset.ops[0];
-        setDset(dset);
-        setOpset(dset.ops[0]);
-        setSelectedItems(selectedItems.concat(dset.opset.plot));
       } else {
-        fetchOpset();
+        // Update existing opset
+        const resp = await fetch(`/tsapi/v1/opsets/${dset.opset.id}`, {
+          method: 'put',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            "id": dset.opset.id,
+            "dataset_id": dset.id,
+            "plot": currts
+          })
+        });
+        const jsonResp = await resp.json();
+        dset.opset = jsonResp;
+        setDset(dset);
+        setOpset(jsonResp);
       }
-      //fetchOpset().then(() => {
-      //  fetchTsData();
-      //});
 
-    } else {
-      fetch(`/tsapi/v1/opsets/${dset?.opset.id}`, {
-        method: 'put',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          "id": dset?.opset.id,
-          "dataset_id": dset.id,
-          "plot": currts
-        })
-      })
-      .then((response) => response.json())
-      .then((data) => {
-          dset.opset = data;
-          setDset(dset);
-          setOpset(data);
-      })
-      .catch((err) => {
-          console.log(err.message);
-      });
-    }
-  }, [currts, dset]);
+      // Fetch time series data
+      const dataResp = await fetch(`/tsapi/v1/tsop/${dset.opset.id}?offset=${offset}&limit=${limit}`);
+      const data = await dataResp.json();
+      setTsData(data.data);
+    };
 
-
-  useEffect(() => {
-    if (dset === undefined || dset.opset === undefined) {
-      return;
-    }
-
-    fetchTsData();
-
-  }, [offset, limit, opset, dset]);
+    updateOpsetAndFetchData().catch(err => {
+      console.log(err.message);
+    });
+  }, [currts, dset, offset, limit]);
 
 
   function CustomTreeItem(props: TreeItem2Props) {
@@ -356,7 +329,13 @@ function App() {
                 overflow: "hidden",
                 overflowY: "scroll"
                }}>
-              <List  sx={{bgcolor: '#3C3C4C'}}>
+              <List  sx={{
+                bgcolor: '#3C3C4C',
+                '& .MuiListItemText-primary': {
+                  fontSize: '14px',
+                  fontWeight: 500
+                }
+              }}>
                 {datasets.map((ds, idx) =>
                   <ListItem disablePadding>
                     <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}  selected={selectedDsetIndex === idx}>
@@ -376,6 +355,15 @@ function App() {
                 onExpandedItemsChange={handleExpandedItemsChange}
                 onSelectedItemsChange={onTreeClick}
                 slots={{ item: CustomTreeItem }}
+                sx={{
+                  '& .MuiTreeItem-label': {
+                    fontSize: '14px',
+                    fontWeight: 500
+                  },
+                  '& .MuiTreeItem-group': {
+                    marginLeft: '8px'
+                  }
+                }}
               />
             </Box>
           </div>
@@ -384,34 +372,124 @@ function App() {
         <div className='w-full'>
           <div className='p-5' style={chartDivStyle}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={tsdata} >
-                <XAxis dataKey="timestamp" angle={45} height={75}/>
-                <YAxis/>
-                {opset?.plot.map((ts, i) => <Line dataKey={`data.${ts}`} key={i} dot={false} stroke={COLORS[i % 8]}/>)}
+              <LineChart 
+                data={tsdata}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="timestamp" 
+                  angle={-45} 
+                  height={100}
+                  interval="preserveStartEnd"
+                  minTickGap={50}
+                  tick={{ 
+                    fontSize: 12,
+                    fill: '#666',
+                    transform: 'translate(0, 10)'
+                  }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                  }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => value.toLocaleString()}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px'
+                  }}
+                  formatter={(value: number) => [value.toLocaleString(), '']}
+                />
+                <Legend 
+                  verticalAlign="top" 
+                  height={36}
+                  wrapperStyle={{ paddingBottom: '20px' }}
+                />
+                {opset?.plot.map((ts, i) => (
+                  <Line 
+                    dataKey={`data.${ts}`} 
+                    key={i} 
+                    dot={false} 
+                    stroke={COLORS[i % 8]}
+                    strokeWidth={2}
+                    name={ts}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
 
-            <div>
-            <Slider 
-              range={{ draggableTrack: true }}
-              min={0}
-              max={dset?.max_length}
-              defaultValue={[Number(offset), Number(limit)]} 
-              value={[sliderLower, sliderUpper]} 
-              onChange={onRangeChange}
-              onChangeComplete={onRangeChangeComplete}
-            />
-            <label> Offset:
-              <input
-                name="offsetInput"
-                defaultValue={offset} value={offset}
-                onChange={onOffsetChange}/>
-            </label>
-            <label> Limit:
-              <input name="limitInput" defaultValue={limit} value={limit}
-              onChange={onLimitChange}/>
-            </label>
-
+            <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Slider 
+                range={{ draggableTrack: true }}
+                min={0}
+                max={dset?.max_length}
+                defaultValue={[Number(offset), Number(limit)]} 
+                value={[sliderLower, sliderUpper]} 
+                onChange={onRangeChange}
+                onChangeComplete={onRangeChangeComplete}
+              />
+              <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '5px',
+                  fontWeight: 500,
+                  color: '#333',
+                  fontSize: '14px'
+                }}>
+                  Offset:
+                  <input
+                    name="offsetInput"
+                    defaultValue={offset} 
+                    value={offset}
+                    onChange={onOffsetChange}
+                    style={{ 
+                      padding: '6px 8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      fontSize: '14px',
+                      width: '80px',
+                      backgroundColor: '#fff',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}
+                  />
+                </label>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '5px',
+                  fontWeight: 500,
+                  color: '#333',
+                  fontSize: '14px'
+                }}>
+                  Limit:
+                  <input 
+                    name="limitInput" 
+                    defaultValue={limit} 
+                    value={limit}
+                    onChange={onLimitChange}
+                    style={{ 
+                      padding: '6px 8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      fontSize: '14px',
+                      width: '80px',
+                      backgroundColor: '#fff',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}
+                  />
+                </label>
+              </div>
             </div>            
           </div>
 

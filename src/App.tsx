@@ -1,90 +1,19 @@
 import { useState, useEffect, ChangeEvent} from 'react'
 import './App.css'
 
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import { TreeViewBaseItem } from '@mui/x-tree-view/models';
-import { TreeItem2, TreeItem2Props } from '@mui/x-tree-view/TreeItem2';
-import { useTreeItem2Utils } from '@mui/x-tree-view/hooks';
-import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
 
 import { dataSet, opSet } from './types/dataset';
 import { ImportDialog } from './components/importdialog/ImportDialog';
+import { DatasetPanel, isPlottable } from './components/DatasetPanel';
 
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
-const catIds = new Set<string>(['ts_col_time', 'ts_col_series', 'ts_col_other']);
-
-
-interface TypedTreeItem extends TreeViewBaseItem {
-  nodeType: string; 
-}
-
 
 type tsPoint = {
   name: string
   x: number
 };
-
-
-function isPlottable(ds: dataSet | undefined, itemId: string): boolean {
-  return findItemParent(ds, itemId) == "ts_col_series";
-}
-
-
-function findItemParent(ds: dataSet | undefined, itemId: string): string | null {
-
-  if (ds != undefined) {
-    if (ds.series_cols.find((id) => id === itemId) != undefined) {
-      return "ts_col_series";
-    } else if (ds.timestamp_cols.find((id) => id === itemId) != undefined) {
-      return "ts_col_time";
-    } else {
-      return null;
-    }
-  } else {
-    return null;
-  }
-
-}
-
-
-function makeTreeItem(ds: dataSet | undefined): TypedTreeItem[] {
-  if (ds != undefined) {
-    const groups = [
-      {
-      id: "ts_col_time",
-      label: "Time Columns",
-      nodeType: "ds",
-      children: ds.timestamp_cols.map((s_id) => ({id: s_id, label: s_id}))
-      },
-      {
-        id: "ts_col_series",
-        label: "Numeric Columns",
-        nodeType: "ds",
-        children: ds.series_cols.map((s_id) => ({id: s_id, label: s_id}))
-      }
-    ]
-    if (ds.other_cols.length > 0) {
-      groups.push({
-        id: "ts_other_series",
-        label: "Other Columns",
-        nodeType: "ds",
-        children: ds.other_cols.map((s_id) => ({id: s_id, label: s_id}))
-      });
-    }
-    return groups;
-  } else {
-    return []
-  }
-}
-
 
 const chartDivStyle = {
   padding: 20,
@@ -119,7 +48,6 @@ function App() {
   const handleOpenAdd = () => setAddVisible(true);
   const handleCloseAdd = () => setAddVisible(false);
 
-
   const onRangeChange = (value: number | number[]) => {
     if (Array.isArray(value)) {
       setSliderLower(value[0]);
@@ -140,7 +68,6 @@ function App() {
     console.log('Adding');
     setDatasets([...datasets, newDataset]);
   }
-
 
   const onDatasetClick = (
     _: React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -176,7 +103,6 @@ function App() {
     setOffset("0");
     setCurrts(tsIds.sort());
   }
-
 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
     let tsIds: string[] = [];
@@ -299,86 +225,21 @@ function App() {
     });
   }, [currts, currentDataset, offset, limit]);
 
-
-  function CustomTreeItem(props: TreeItem2Props) {
-    const { status } = useTreeItem2Utils({
-      itemId: props.itemId,
-      children: props.children,
-    });
-  
-    return (
-      <TreeItem2
-        {...props}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        slotProps={{ checkbox: { visible: !status.expandable } as any }}
-      />
-    );
-  }
-
   return (
     <>
       <div className="flex justify-start w-full">
-        <div className='bg-slate-700'>
-          <div className='flex justify-between p-2'>
-            <div className='flex justify-center text-l font-bold'>
-            Datasets
-            </div>
-            <div className='flex justify-items-end'>
-              <Button variant="outlined"  size="small" onClick={handleOpenAdd} sx={{margin: "2px 5px 2px 5px"}}>Add</Button>
-              <Button variant="outlined"  size="small" onClick={handleOpenImport} sx={{margin: "2px 5px 2px 5px"}}>Import</Button>
-            </div>
-          </div>
-          <div>
-            <Box sx={{
-                minHeight: 600,
-                minWidth: 250,
-                maxHeight:800,
-                mb: 2,
-                display: "flex",
-                flexDirection: "column",
-                height: 700,
-                overflow: "hidden",
-                overflowY: "scroll"
-               }}>
-              <List  sx={{
-                bgcolor: '#3C3C4C',
-                '& .MuiListItemText-primary': {
-                  fontSize: '14px',
-                  fontWeight: 500
-                }
-              }}>
-                {datasets.map((ds, idx) =>
-                  <ListItem disablePadding>
-                    <ListItemButton  onClick={(event) => {onDatasetClick(event, idx)}}  selected={selectedDsetIndex === idx}>
-                      <ListItemText primary={ds.name}/>
-                    </ListItemButton>
-                  </ListItem>
-                )} 
-              </List>
-              <Divider/>
-              <RichTreeView
-                multiSelect
-                items={currentDataset ? makeTreeItem(currentDataset) : []}
-                checkboxSelection
-                defaultExpandedItems={Array.from(catIds)}
-                selectedItems={selectedItems}
-                expandedItems={expandedItems}
-                onExpandedItemsChange={handleExpandedItemsChange}
-                onSelectedItemsChange={onTreeClick}
-                slots={{ item: CustomTreeItem }}
-                sx={{
-                  '& .MuiTreeItem-label': {
-                    fontSize: '14px',
-                    fontWeight: 500
-                  },
-                  '& .MuiTreeItem-group': {
-                    marginLeft: '8px'
-                  }
-                }}
-              />
-            </Box>
-          </div>
-        </div>
+        <DatasetPanel 
+          datasets={datasets}
+          currentDataset={currentDataset}
+          selectedDsetIndex={selectedDsetIndex}
+          selectedItems={selectedItems}
+          expandedItems={expandedItems}
+          onDatasetClick={onDatasetClick}
+          onTreeClick={onTreeClick}
+          handleExpandedItemsChange={handleExpandedItemsChange}
+          handleOpenAdd={handleOpenAdd}
+          handleOpenImport={handleOpenImport}
+        />
 
         <div className='w-full'>
           <div className='p-5' style={chartDivStyle}>
@@ -426,10 +287,10 @@ function App() {
                   height={36}
                   wrapperStyle={{ paddingBottom: '20px' }}
                 />
-                {opset?.plot.map((ts, i) => (
+                {opset?.plot.map((ts) => (
                   <Line 
                     dataKey={`data.${ts}`} 
-                    key={i} 
+                    key={ts} 
                     dot={false} 
                     stroke={seriesColors[ts] || COLORS[0]}
                     strokeWidth={2}
@@ -503,7 +364,6 @@ function App() {
               </div>
             </div>            
           </div>
-
         </div>
       </div>
 

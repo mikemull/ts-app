@@ -93,6 +93,24 @@ function CustomTreeItem(props: TreeItem2Props) {
   );
 }
 
+const panelStyle = {
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  margin: '20px',
+  minWidth: '250px',
+  display: 'flex',
+  flexDirection: 'column' as const
+};
+
+const headerStyle = {
+  padding: '15px 20px',
+  borderBottom: '1px solid #eee',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center'
+};
+
 export function DatasetPanel({
   datasets,
   currentDataset,
@@ -106,33 +124,83 @@ export function DatasetPanel({
   handleOpenImport
 }: DatasetPanelProps) {
   return (
-    <div className='bg-slate-700'>
-      <div className='flex justify-between p-2'>
-        <div className='flex justify-center text-l font-bold'>
+    <div style={panelStyle}>
+      <div style={headerStyle}>
+        <div style={{ 
+          fontSize: '16px',
+          fontWeight: 500,
+          color: '#333'
+        }}>
           Datasets
         </div>
-        <div className='flex justify-items-end'>
-          <Button variant="outlined" size="small" onClick={handleOpenAdd} sx={{margin: "2px 5px 2px 5px"}}>Add</Button>
-          <Button variant="outlined" size="small" onClick={handleOpenImport} sx={{margin: "2px 5px 2px 5px"}}>Import</Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            onClick={handleOpenAdd}
+            sx={{
+              borderColor: '#ccc',
+              color: '#666',
+              '&:hover': {
+                borderColor: '#999',
+                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+              }
+            }}
+          >
+            Add
+          </Button>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            onClick={handleOpenImport}
+            sx={{
+              borderColor: '#ccc',
+              color: '#666',
+              '&:hover': {
+                borderColor: '#999',
+                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+              }
+            }}
+          >
+            Import
+          </Button>
         </div>
       </div>
-      <div>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
         <Box sx={{
-          minHeight: 600,
-          minWidth: 250,
-          maxHeight: 800,
-          mb: 2,
+          height: 'calc(100vh - 140px)',
           display: "flex",
           flexDirection: "column",
-          height: 700,
           overflow: "hidden",
-          overflowY: "scroll"
+          overflowY: "auto",
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f5f5f5',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#ddd',
+            borderRadius: '4px',
+          }
         }}>
           <List sx={{
-            bgcolor: '#3C3C4C',
+            bgcolor: 'transparent',
             '& .MuiListItemText-primary': {
               fontSize: '14px',
-              fontWeight: 500
+              fontWeight: 500,
+              color: '#333'
+            },
+            '& .MuiListItemButton-root': {
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+              },
+              '&.Mui-selected': {
+                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.12)'
+                }
+              }
             }
           }}>
             {datasets.map((ds, idx) =>
@@ -143,7 +211,7 @@ export function DatasetPanel({
               </ListItem>
             )} 
           </List>
-          <Divider/>
+          <Divider sx={{ margin: '8px 0' }}/>
           <RichTreeView
             multiSelect
             items={currentDataset ? makeTreeItem(currentDataset) : []}
@@ -157,10 +225,24 @@ export function DatasetPanel({
             sx={{
               '& .MuiTreeItem-label': {
                 fontSize: '14px',
-                fontWeight: 500
+                fontWeight: 500,
+                color: '#333'
               },
               '& .MuiTreeItem-group': {
                 marginLeft: '8px'
+              },
+              '& .MuiTreeItem-content': {
+                padding: '4px 8px',
+                borderRadius: '4px',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                },
+                '&.Mui-selected': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.12)'
+                  }
+                }
               }
             }}
           />

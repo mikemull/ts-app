@@ -15,14 +15,21 @@ type tsPoint = {
   x: number
 };
 
-const chartDivStyle = {
-  padding: 20,
-  width: 'calc(100% - 25px)',
-  height: 400,
-  minHeight: 400,
+const chartContainerStyle = {
   backgroundColor: '#ffffff',
   borderRadius: '8px',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  margin: '20px',
+  padding: '20px',
+  flex: 1
+};
+
+const chartControlsStyle = { 
+  marginTop: '20px', 
+  padding: '15px', 
+  backgroundColor: '#f5f5f5', 
+  borderRadius: '4px',
+  border: '1px solid #eee'
 };
 
 function App() {
@@ -227,7 +234,7 @@ function App() {
 
   return (
     <>
-      <div className="flex justify-start w-full">
+      <div style={{ display: 'flex', width: '100%', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
         <DatasetPanel 
           datasets={datasets}
           currentDataset={currentDataset}
@@ -241,129 +248,135 @@ function App() {
           handleOpenImport={handleOpenImport}
         />
 
-        <div className='w-full'>
-          <div className='p-5' style={chartDivStyle}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
-                data={tsdata}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="timestamp" 
-                  angle={-45} 
-                  height={100}
-                  interval="preserveStartEnd"
-                  minTickGap={50}
-                  tick={{ 
-                    fontSize: 12,
-                    fill: '#666',
-                    transform: 'translate(0, 10)'
-                  }}
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
-                    return date.toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                  }}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => value.toLocaleString()}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px'
-                  }}
-                  formatter={(value: number) => [value.toLocaleString(), '']}
-                />
-                <Legend 
-                  verticalAlign="top" 
-                  height={36}
-                  wrapperStyle={{ paddingBottom: '20px' }}
-                />
-                {opset?.plot.map((ts) => (
-                  <Line 
-                    dataKey={`data.${ts}`} 
-                    key={ts} 
-                    dot={false} 
-                    stroke={seriesColors[ts] || COLORS[0]}
-                    strokeWidth={2}
-                    name={ts}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-
-            <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-              <Slider 
-                range={{ draggableTrack: true }}
-                min={0}
-                max={currentDataset?.max_length}
-                defaultValue={[Number(offset), Number(limit)]} 
-                value={[sliderLower, sliderUpper]} 
-                onChange={onRangeChange}
-                onChangeComplete={onRangeChangeComplete}
+        <div style={chartContainerStyle}>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart 
+              data={tsdata}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="timestamp" 
+                angle={-45} 
+                height={100}
+                interval="preserveStartEnd"
+                minTickGap={50}
+                tick={{ 
+                  fontSize: 12,
+                  fill: '#666',
+                  transform: 'translate(0, 10)'
+                }}
+                tickFormatter={(value) => {
+                  const date = new Date(value);
+                  return date.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                }}
               />
-              <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-                <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '5px',
-                  fontWeight: 500,
-                  color: '#333',
-                  fontSize: '14px'
-                }}>
-                  Offset:
-                  <input
-                    name="offsetInput"
-                    defaultValue={offset} 
-                    value={offset}
-                    onChange={onOffsetChange}
-                    style={{ 
-                      padding: '6px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                      fontSize: '14px',
-                      width: '80px',
-                      backgroundColor: '#fff',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                    }}
-                  />
-                </label>
-                <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '5px',
-                  fontWeight: 500,
-                  color: '#333',
-                  fontSize: '14px'
-                }}>
-                  Limit:
-                  <input 
-                    name="limitInput" 
-                    defaultValue={limit} 
-                    value={limit}
-                    onChange={onLimitChange}
-                    style={{ 
-                      padding: '6px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                      fontSize: '14px',
-                      width: '80px',
-                      backgroundColor: '#fff',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                    }}
-                  />
-                </label>
-              </div>
-            </div>            
-          </div>
+              <YAxis 
+                tick={{ 
+                  fontSize: 12,
+                  fill: '#666'
+                }}
+                tickFormatter={(value) => value.toLocaleString()}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+                formatter={(value: number) => [value.toLocaleString(), '']}
+              />
+              <Legend 
+                verticalAlign="top" 
+                height={36}
+                wrapperStyle={{ 
+                  paddingBottom: '20px',
+                  fontSize: '14px',
+                  color: '#333'
+                }}
+              />
+              {opset?.plot.map((ts) => (
+                <Line 
+                  dataKey={`data.${ts}`} 
+                  key={ts} 
+                  dot={false} 
+                  stroke={seriesColors[ts] || COLORS[0]}
+                  strokeWidth={2}
+                  name={ts}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          <div style={chartControlsStyle}>
+            <Slider 
+              range={{ draggableTrack: true }}
+              min={0}
+              max={currentDataset?.max_length}
+              defaultValue={[Number(offset), Number(limit)]} 
+              value={[sliderLower, sliderUpper]} 
+              onChange={onRangeChange}
+              onChangeComplete={onRangeChangeComplete}
+            />
+            <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '5px',
+                fontWeight: 500,
+                color: '#333',
+                fontSize: '14px'
+              }}>
+                Offset:
+                <input
+                  name="offsetInput"
+                  defaultValue={offset} 
+                  value={offset}
+                  onChange={onOffsetChange}
+                  style={{ 
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    fontSize: '14px',
+                    width: '80px',
+                    backgroundColor: '#fff',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                />
+              </label>
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '5px',
+                fontWeight: 500,
+                color: '#333',
+                fontSize: '14px'
+              }}>
+                Limit:
+                <input 
+                  name="limitInput" 
+                  defaultValue={limit} 
+                  value={limit}
+                  onChange={onLimitChange}
+                  style={{ 
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    fontSize: '14px',
+                    width: '80px',
+                    backgroundColor: '#fff',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                />
+              </label>
+            </div>
+          </div>            
         </div>
       </div>
 

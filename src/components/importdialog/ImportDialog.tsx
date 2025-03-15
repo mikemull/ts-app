@@ -40,7 +40,7 @@ const dialogStyle = {
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     color: '#333',
-    minWidth: '400px'
+    minWidth: '600px'
   }
 };
 
@@ -82,16 +82,6 @@ const fileInputLabelStyle = {
 const fileInputStyle = {
   position: 'relative' as const,
   '& input[type="file"]': {
-    position: 'absolute' as const,
-    width: '1px',
-    height: '1px',
-    padding: '0',
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0,0,0,0)',
-    border: '0'
-  },
-  '& .file-input-trigger': {
     display: 'inline-flex',
     alignItems: 'center',
     padding: '8px 16px',
@@ -101,9 +91,13 @@ const fileInputStyle = {
     color: '#666',
     fontSize: '14px',
     cursor: 'pointer',
+    width: '100%',
     '&:hover': {
       backgroundColor: 'rgba(0, 0, 0, 0.04)',
       borderColor: '#999'
+    },
+    '&::-webkit-file-upload-button': {
+      display: 'none'
     }
   },
   '& .file-name': {
@@ -126,6 +120,7 @@ const buttonStyle = {
   fontSize: '14px',
   fontWeight: 500
 };
+
 
 export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, onClose, addDataset }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -192,9 +187,12 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
           fontWeight: 500,
           color: '#333',
           padding: '20px 24px',
-          borderBottom: '1px solid #eee'
+          borderBottom: '1px solid #eee',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          {dialogProps[uploadType].title}
+          <div>{dialogProps[uploadType].title}</div>
         </DialogTitle>
         <DialogContent sx={contentStyle}>
           <DialogContentText>

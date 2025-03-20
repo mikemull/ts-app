@@ -94,11 +94,11 @@ function CustomTreeItem(props: TreeItem2Props) {
 }
 
 const panelStyle = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#f8f9fa',
   borderRadius: '8px',
   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   margin: '20px',
-  minWidth: '250px',
+  width: '300px',
   display: 'flex',
   flexDirection: 'column' as const
 };
@@ -108,7 +108,8 @@ const headerStyle = {
   borderBottom: '1px solid #eee',
   display: 'flex',
   justifyContent: 'space-between',
-  alignItems: 'center'
+  alignItems: 'center',
+  backgroundColor: '#ffffff'
 };
 
 export function DatasetPanel({
@@ -166,7 +167,7 @@ export function DatasetPanel({
           </Button>
         </div>
       </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
         <Box sx={{
           height: 'calc(100vh - 140px)',
           display: "flex",
@@ -177,7 +178,7 @@ export function DatasetPanel({
             width: '8px',
           },
           '&::-webkit-scrollbar-track': {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: '#f0f0f0',
           },
           '&::-webkit-scrollbar-thumb': {
             backgroundColor: '#ddd',
@@ -242,6 +243,12 @@ export function DatasetPanel({
                   '&:hover': {
                     backgroundColor: 'rgba(0, 0, 0, 0.12)'
                   }
+                }
+              },
+              '& .MuiTreeItem-iconContainer': {
+                '& svg': {
+                  color: '#666',
+                  fontSize: '20px'
                 }
               }
             }}

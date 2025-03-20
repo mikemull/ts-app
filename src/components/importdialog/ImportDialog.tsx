@@ -121,6 +121,12 @@ const buttonStyle = {
   fontWeight: 500
 };
 
+interface SignedUrlResponse {
+  url: string;
+  fields: {
+    [key: string]: string;
+  };
+}
 
 export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, onClose, addDataset }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -143,16 +149,59 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
     if (file) {
       event.preventDefault();
       console.log('Uploading file...');
-  
-      const dsFormData = new FormData();
-      dsFormData.append('name', modalData.dataset_name);
-      dsFormData.append('file', file);
-      dsFormData.append('upload_type', upload_type);
-  
+
       try {
-        const result = await fetch('/tsapi/v1/files', {
+        // First, get the signed URL from your backend
+        const signedUrlResponse = await fetch('/tsapi/v1/signed-url', {
           method: 'POST',
-          body: dsFormData,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: modalData.dataset_name,
+            upload_type: upload_type
+          })
+        });
+
+        if (!signedUrlResponse.ok) {
+          const error = await signedUrlResponse.json();
+          throw new Error(`Failed to get signed URL: ${error.detail}`);
+        }
+
+        const signedUrlData: SignedUrlResponse = await signedUrlResponse.json();
+
+        // Create form data for the upload
+        const formData = new FormData();
+        Object.entries(signedUrlData.fields).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        formData.append('file', file);
+
+        // Upload to Google Cloud Storage
+        const uploadResponse = await fetch(signedUrlData.url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
+          body: formData
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload file to Google Cloud Storage');
+        }
+
+        // After successful upload, create the dataset
+        const dsFormData = new FormData();
+        dsFormData.append('name', modalData.dataset_name);
+        dsFormData.append('upload_type', upload_type);
+
+        const result = await fetch('/tsapi/v1/datasets', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            "name": modalData.dataset_name,
+            "upload_type": upload_type
+          }),
         });
 
         if (!result.ok) {
@@ -164,7 +213,8 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
         addDataset(data as dataSet);
         onClose();
       } catch (error) {
-        alert(error);
+        console.error('Upload error:', error);
+        alert(error instanceof Error ? error.message : 'An error occurred during upload');
       }
     }
   };

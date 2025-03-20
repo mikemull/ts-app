@@ -183,7 +183,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
           headers: {
             'Content-Type': 'application/octet-stream',
           },
-          body: formData
+          body: file
         });
 
         if (!uploadResponse.ok) {

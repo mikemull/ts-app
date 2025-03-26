@@ -3,6 +3,8 @@ export type opSet = {
     id: string
     dataset_id: string
     plot: string[]
+    offset: number
+    limit: number
   };
   
   

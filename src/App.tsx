@@ -298,7 +298,7 @@ function App() {
                   borderRadius: '4px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
-                formatter={(value: number) => [value.toLocaleString(), '']}
+                label="timestamp"
               />
               <Legend 
                 verticalAlign="top" 
@@ -317,6 +317,7 @@ function App() {
                   stroke={seriesColors[ts] || COLORS[0]}
                   strokeWidth={2}
                   name={ts}
+                  activeDot={{ r: 4 }}
                 />
               ))}
             </LineChart>

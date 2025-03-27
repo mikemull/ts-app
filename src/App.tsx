@@ -91,9 +91,17 @@ function App() {
       tsIds = selectDset.ops[0].plot;
       setOpset(selectDset.ops[0]);
       setTsData([]);
+      setLimit(String(selectDset.ops[0].limit));
+      setSliderUpper(selectDset.ops[0].offset + selectDset.ops[0].limit);
+      setSliderLower(selectDset.ops[0].offset);
+      setOffset(String(selectDset.ops[0].offset));
     } else {
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]));
       setTsData([]);
+      setLimit(String(selectDset.max_length));
+      setSliderUpper(selectDset.max_length);
+      setSliderLower(0);
+      setOffset("0");
     }
     
     const newColors: { [key: string]: string } = {};
@@ -104,10 +112,6 @@ function App() {
     }
     setSeriesColors(newColors);
 
-    setLimit(String(selectDset.max_length));
-    setSliderUpper(selectDset.max_length);
-    setSliderLower(0);
-    setOffset("0");
     setCurrts(tsIds.sort());
   }
 
@@ -197,7 +201,9 @@ function App() {
           body: JSON.stringify({
             "id": "0",
             "dataset_id": currentDataset.id,
-            "plot": currts
+            "plot": currts,
+            "offset": Number(offset),
+            "limit": Number(limit)
           })
         });
         const jsonResp = await resp.json();
@@ -212,7 +218,9 @@ function App() {
           body: JSON.stringify({
             "id": currentDataset.ops[0].id,
             "dataset_id": currentDataset.id,
-            "plot": currts
+            "plot": currts,
+            "offset": Number(offset),
+            "limit": Number(limit)
           })
         });
         const jsonResp = await resp.json();
@@ -290,7 +298,7 @@ function App() {
                   borderRadius: '4px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
-                formatter={(value: number) => [value.toLocaleString(), '']}
+                label="timestamp"
               />
               <Legend 
                 verticalAlign="top" 
@@ -309,6 +317,7 @@ function App() {
                   stroke={seriesColors[ts] || COLORS[0]}
                   strokeWidth={2}
                   name={ts}
+                  activeDot={{ r: 4 }}
                 />
               ))}
             </LineChart>

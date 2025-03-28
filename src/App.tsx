@@ -36,7 +36,7 @@ function App() {
   const [datasets, setDatasets] = useState<dataSet[]>([]);
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
   const [currentDataset, setCurrentDataset] = useState<dataSet>();
-  const [opset, setOpset] = useState<opSet>();
+  const [currOpset, setCurrOpset] = useState<opSet>();
   const [selectedDsetIndex, setSelectedDsetIndex] = useState(1);
   const [currts, setCurrts] = useState<string[]>([]);
   const [offset, setOffset] = useState('0');
@@ -89,7 +89,7 @@ function App() {
       console.log("selectDset.ops", selectDset.ops);
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.ops[0].plot));
       tsIds = selectDset.ops[0].plot;
-      setOpset(selectDset.ops[0]);
+      setCurrOpset(selectDset.ops[0]);
       setTsData([]);
       setLimit(String(selectDset.ops[0].limit));
       setSliderUpper(selectDset.ops[0].offset + selectDset.ops[0].limit);
@@ -209,7 +209,7 @@ function App() {
         const jsonResp = await resp.json();
         currentDataset.ops.push(jsonResp);
         setCurrentDataset(currentDataset);
-        setOpset(jsonResp);
+        setCurrOpset(jsonResp);
       } else {
         // Update existing opset
         const resp = await fetch(`/tsapi/v1/opsets/${currentDataset.ops[0].id}`, {
@@ -226,11 +226,11 @@ function App() {
         const jsonResp = await resp.json();
         currentDataset.ops[0] = jsonResp;
         setCurrentDataset(currentDataset);
-        setOpset(jsonResp);
+        setCurrOpset(jsonResp);
       }
 
       // Fetch time series data
-      const dataResp = await fetch(`/tsapi/v1/tsop/${currentDataset.ops[0].id}?offset=${offset}&limit=${limit}`);
+      const dataResp = await fetch(`/tsapi/v1/tsop/${currentDataset.ops[0].id}`);
       const data = await dataResp.json();
       setTsData(data.data);
     };
@@ -309,7 +309,7 @@ function App() {
                   color: '#333'
                 }}
               />
-              {opset?.plot.map((ts) => (
+              {currOpset?.plot.map((ts) => (
                 <Line 
                   dataKey={`data.${ts}`} 
                   key={ts} 

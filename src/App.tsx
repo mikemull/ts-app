@@ -116,44 +116,19 @@ function App() {
   }
 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
-    let tsIds: string[] = [];
-    let allSeries = false;
+    const tsIds: string[] = [];
 
     console.log(itemIds);
     const selSet = new Set<string>(itemIds);
 
-    // First, check for top-level selections
     for (const item of itemIds) {
-      // Select all in category
-      if (currentDataset != undefined) {
-        if (item == "ts_col_time") {
-          for (const col of currentDataset.timestamp_cols) {
-            selSet.add(col);
-          }
-        } 
-        if (item == "ts_col_series") {
-          for (const col of currentDataset.series_cols) {
-            selSet.add(col);
-          }
-          tsIds = currentDataset.series_cols;
-          allSeries = true;
-        }
+      // Time series ID
+      if (isPlottable(currentDataset, item)) {
+        tsIds.push(item);
       }
     }
 
-    if (!allSeries) {
-      for (const item of itemIds) {
-        // Time series ID
-        if (isPlottable(currentDataset, item)) {
-          tsIds.push(item);
-        }
-      }
-    }
- 
-    console.log(selSet);
     setSelectedItems(Array.from(selSet));
-    console.log(tsIds);
-    console.log(selectedItems);
     setCurrts(tsIds.sort());
   }
 
@@ -212,6 +187,8 @@ function App() {
         setCurrOpset(jsonResp);
       } else {
         // Update existing opset
+        console.log("Updating opset", currOpset);
+        console.log("Currts", currts);
         const resp = await fetch(`/tsapi/v1/opsets/${currentDataset.ops[0].id}`, {
           method: 'put',
           headers: {'Content-Type':'application/json'},

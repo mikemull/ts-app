@@ -98,9 +98,11 @@ function App() {
       setCurrOpset(selectDset.ops[0]);
       setTsData([]);
       setLimit(String(selectDset.ops[0].limit));
+      limitRef.current!.value = String(selectDset.ops[0].limit);
       setSliderUpper(selectDset.ops[0].offset + selectDset.ops[0].limit);
       setSliderLower(selectDset.ops[0].offset);
       setOffset(String(selectDset.ops[0].offset));
+      offsetRef.current!.value = String(selectDset.ops[0].offset);
           
       let colIndex = 0;
       for (const ts of selectDset.ops[0].plot) {

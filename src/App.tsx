@@ -91,7 +91,7 @@ function App() {
     const selectDset = datasets[index]
     setSelectedDsetIndex(index);
     setExpandedItems(["ts_col_time", "ts_col_series"]);
-    if (selectDset.ops.length > 0) { //((selectDset.opset !== undefined) && (selectDset.opset != null)) {
+    if (selectDset.ops.length > 0) {
       console.log("selectDset.ops", selectDset.ops);
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.ops[0].plot));
       setSelectedTimeSeries(selectDset.ops[0].plot);
@@ -117,6 +117,7 @@ function App() {
       setTsData([]);
       setSelectedTimeSeries([]);
       setLimit(String(selectDset.max_length));
+      limitRef.current!.value = String(selectDset.max_length);
       setSliderUpper(selectDset.max_length);
       setSliderLower(0);
       setOffset("0");

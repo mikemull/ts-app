@@ -1,5 +1,6 @@
-import { useState, useEffect, ChangeEvent} from 'react'
+import { useState, useEffect, useRef} from 'react'
 import './App.css'
+import { useDebouncedCallback } from 'use-debounce';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
@@ -49,6 +50,8 @@ function App() {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [seriesColors, setSeriesColors] = useState<{ [key: string]: string }>({});
   const [colorIndex, setColorIndex] = useState(0);
+  const limitRef = useRef<HTMLInputElement>(null);
+  const offsetRef = useRef<HTMLInputElement>(null);
 
   const handleCloseImport = () => setImportVisible(false);
   const handleOpenImport = () => setImportVisible(true);
@@ -66,7 +69,9 @@ function App() {
   const onRangeChangeComplete = (value: number | number[]) => {
     if (Array.isArray(value)) {
       setLimit(String(sliderUpper - sliderLower));
+      limitRef.current!.value = String(value[1] - value[0]);
       setOffset(String(sliderLower));
+      offsetRef.current!.value = String(value[0]);
     }
   };
 
@@ -141,15 +146,25 @@ function App() {
 
   }
 
-  function onOffsetChange(event: ChangeEvent<HTMLInputElement>) {
-    setOffset(event.target.value);
-    setSliderLower(Number(event.target.value));
-  }
+  const debouncedOffsetChange = useDebouncedCallback(
+    // function
+    (value) => {
+      setSliderLower(Number(value));
+      setOffset(value);
+    },
+    // delay in ms
+    1000
+  );
 
-  function onLimitChange(event: ChangeEvent<HTMLInputElement>) {
-    setLimit(event.target.value);
-    setSliderUpper(Number(sliderLower) + Number(event.target.value));
-  }
+  const debouncedLimitChange = useDebouncedCallback(
+    // function
+    (value) => {
+      setSliderUpper(Number(sliderLower) + Number(value));
+      setLimit(value);
+    },
+    // delay in ms
+    1000
+  );
 
   const handleExpandedItemsChange = (
     _: React.SyntheticEvent,
@@ -343,8 +358,9 @@ function App() {
                 <input
                   name="offsetInput"
                   defaultValue={offset} 
-                  value={offset}
-                  onChange={onOffsetChange}
+                  //value={offset}
+                  ref={offsetRef}
+                  onChange={(e) => debouncedOffsetChange(e.target.value)}
                   style={{ 
                     padding: '6px 8px',
                     borderRadius: '4px',
@@ -368,8 +384,9 @@ function App() {
                 <input 
                   name="limitInput" 
                   defaultValue={limit} 
-                  value={limit}
-                  onChange={onLimitChange}
+                  ref={limitRef}
+                  //value={limit}
+                  onChange={(e) => debouncedLimitChange(e.target.value)}
                   style={{ 
                     padding: '6px 8px',
                     borderRadius: '4px',

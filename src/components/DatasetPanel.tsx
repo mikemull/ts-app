@@ -100,7 +100,9 @@ const panelStyle = {
   margin: '20px',
   width: '300px',
   display: 'flex',
-  flexDirection: 'column' as const
+  flexDirection: 'column' as const,
+  fontFamily: 'Arial, sans-serif',
+  fontSize: '0.75rem',
 };
 
 const headerStyle = {
@@ -188,9 +190,9 @@ export function DatasetPanel({
           <List sx={{
             bgcolor: 'transparent',
             '& .MuiListItemText-primary': {
-              fontSize: '14px',
+              fontSize: '0.750rem',
               fontWeight: 500,
-              color: '#333'
+              color: '#202124'
             },
             '& .MuiListItemButton-root': {
               '&:hover': {

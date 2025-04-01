@@ -1,5 +1,6 @@
-import { useState, useEffect, ChangeEvent} from 'react'
+import { useState, useEffect, useRef} from 'react'
 import './App.css'
+import { useDebouncedCallback } from 'use-debounce';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
@@ -36,9 +37,9 @@ function App() {
   const [datasets, setDatasets] = useState<dataSet[]>([]);
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
   const [currentDataset, setCurrentDataset] = useState<dataSet>();
-  const [opset, setOpset] = useState<opSet>();
+  const [currOpset, setCurrOpset] = useState<opSet>();
+  const [selectedTimeSeries, setSelectedTimeSeries] = useState<string[]>([]);
   const [selectedDsetIndex, setSelectedDsetIndex] = useState(1);
-  const [currts, setCurrts] = useState<string[]>([]);
   const [offset, setOffset] = useState('0');
   const [limit, setLimit] = useState('1000');
   const [sliderUpper, setSliderUpper] = useState(1000);
@@ -48,13 +49,16 @@ function App() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [seriesColors, setSeriesColors] = useState<{ [key: string]: string }>({});
+  const [colorIndex, setColorIndex] = useState(0);
+  const limitRef = useRef<HTMLInputElement>(null);
+  const offsetRef = useRef<HTMLInputElement>(null);
 
   const handleCloseImport = () => setImportVisible(false);
   const handleOpenImport = () => setImportVisible(true);
 
   const handleOpenAdd = () => setAddVisible(true);
   const handleCloseAdd = () => setAddVisible(false);
-
+  
   const onRangeChange = (value: number | number[]) => {
     if (Array.isArray(value)) {
       setSliderLower(value[0]);
@@ -65,7 +69,9 @@ function App() {
   const onRangeChangeComplete = (value: number | number[]) => {
     if (Array.isArray(value)) {
       setLimit(String(sliderUpper - sliderLower));
+      limitRef.current!.value = String(value[1] - value[0]);
       setOffset(String(sliderLower));
+      offsetRef.current!.value = String(value[0]);
     }
   };
 
@@ -80,92 +86,88 @@ function App() {
     _: React.MouseEvent<HTMLDivElement, MouseEvent>,
     index: number,
   ) => {
-    let tsIds: string[] = [];
+
+    const newColors: { [key: string]: string } = {};
     const selectDset = datasets[index]
-    setCurrentDataset(selectDset);
     setSelectedDsetIndex(index);
     setExpandedItems(["ts_col_time", "ts_col_series"]);
-    if (selectDset.ops.length > 0) { //((selectDset.opset !== undefined) && (selectDset.opset != null)) {
+    if (selectDset.ops.length > 0) {
       console.log("selectDset.ops", selectDset.ops);
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.ops[0].plot));
-      tsIds = selectDset.ops[0].plot;
-      setOpset(selectDset.ops[0]);
+      setSelectedTimeSeries(selectDset.ops[0].plot);
+      setCurrOpset(selectDset.ops[0]);
       setTsData([]);
       setLimit(String(selectDset.ops[0].limit));
+      limitRef.current!.value = String(selectDset.ops[0].limit);
       setSliderUpper(selectDset.ops[0].offset + selectDset.ops[0].limit);
       setSliderLower(selectDset.ops[0].offset);
       setOffset(String(selectDset.ops[0].offset));
+      offsetRef.current!.value = String(selectDset.ops[0].offset);
+          
+      let colIndex = 0;
+      for (const ts of selectDset.ops[0].plot) {
+        newColors[ts] = COLORS[colIndex % COLORS.length];
+        colIndex++;
+      }
+      setColorIndex(colIndex);
+
+      setSeriesColors(newColors);
     } else {
       setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]));
       setTsData([]);
+      setSelectedTimeSeries([]);
       setLimit(String(selectDset.max_length));
+      limitRef.current!.value = String(selectDset.max_length);
       setSliderUpper(selectDset.max_length);
       setSliderLower(0);
       setOffset("0");
     }
-    
-    const newColors: { [key: string]: string } = {};
-    let colorIndex = 0;
-    for (const ts of tsIds) {
-      newColors[ts] = COLORS[colorIndex % COLORS.length];
-      colorIndex++;
-    }
-    setSeriesColors(newColors);
 
-    setCurrts(tsIds.sort());
+    setCurrentDataset(selectDset);
   }
 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
-    let tsIds: string[] = [];
-    let allSeries = false;
+    const tsIds: string[] = [];
 
     console.log(itemIds);
     const selSet = new Set<string>(itemIds);
 
-    // First, check for top-level selections
     for (const item of itemIds) {
-      // Select all in category
-      if (currentDataset != undefined) {
-        if (item == "ts_col_time") {
-          for (const col of currentDataset.timestamp_cols) {
-            selSet.add(col);
-          }
-        } 
-        if (item == "ts_col_series") {
-          for (const col of currentDataset.series_cols) {
-            selSet.add(col);
-          }
-          tsIds = currentDataset.series_cols;
-          allSeries = true;
+      // Time series ID
+      if (isPlottable(currentDataset, item)) {
+        tsIds.push(item);
+        if (!seriesColors[item]) {
+          const color = COLORS[colorIndex % COLORS.length];
+          setSeriesColors((prev) => ({ ...prev, [item]: color }));
+          setColorIndex((prev) => prev + 1);
         }
       }
     }
 
-    if (!allSeries) {
-      for (const item of itemIds) {
-        // Time series ID
-        if (isPlottable(currentDataset, item)) {
-          tsIds.push(item);
-        }
-      }
-    }
- 
-    console.log(selSet);
     setSelectedItems(Array.from(selSet));
-    console.log(tsIds);
-    console.log(selectedItems);
-    setCurrts(tsIds.sort());
+    setSelectedTimeSeries(tsIds.sort());
+
   }
 
-  function onOffsetChange(event: ChangeEvent<HTMLInputElement>) {
-    setOffset(event.target.value);
-    setSliderLower(Number(event.target.value));
-  }
+  const debouncedOffsetChange = useDebouncedCallback(
+    // function
+    (value) => {
+      setSliderLower(Number(value));
+      setOffset(value);
+    },
+    // delay in ms
+    1000
+  );
 
-  function onLimitChange(event: ChangeEvent<HTMLInputElement>) {
-    setLimit(event.target.value);
-    setSliderUpper(Number(sliderLower) + Number(event.target.value));
-  }
+  const debouncedLimitChange = useDebouncedCallback(
+    // function
+    (value) => {
+      setSliderUpper(Number(sliderLower) + Number(value));
+      setLimit(value);
+    },
+    // delay in ms
+    1000
+  );
 
   const handleExpandedItemsChange = (
     _: React.SyntheticEvent,
@@ -201,7 +203,7 @@ function App() {
           body: JSON.stringify({
             "id": "0",
             "dataset_id": currentDataset.id,
-            "plot": currts,
+            "plot": selectedTimeSeries,
             "offset": Number(offset),
             "limit": Number(limit)
           })
@@ -209,7 +211,7 @@ function App() {
         const jsonResp = await resp.json();
         currentDataset.ops.push(jsonResp);
         setCurrentDataset(currentDataset);
-        setOpset(jsonResp);
+        setCurrOpset(jsonResp);
       } else {
         // Update existing opset
         const resp = await fetch(`/tsapi/v1/opsets/${currentDataset.ops[0].id}`, {
@@ -218,7 +220,7 @@ function App() {
           body: JSON.stringify({
             "id": currentDataset.ops[0].id,
             "dataset_id": currentDataset.id,
-            "plot": currts,
+            "plot": selectedTimeSeries,
             "offset": Number(offset),
             "limit": Number(limit)
           })
@@ -226,19 +228,32 @@ function App() {
         const jsonResp = await resp.json();
         currentDataset.ops[0] = jsonResp;
         setCurrentDataset(currentDataset);
-        setOpset(jsonResp);
+        setCurrOpset(jsonResp);
       }
-
-      // Fetch time series data
-      const dataResp = await fetch(`/tsapi/v1/tsop/${currentDataset.ops[0].id}?offset=${offset}&limit=${limit}`);
-      const data = await dataResp.json();
-      setTsData(data.data);
     };
 
     updateOpsetAndFetchData().catch(err => {
       console.log(err.message);
     });
-  }, [currts, currentDataset, offset, limit]);
+  }, [currentDataset, offset, limit, selectedTimeSeries]);
+
+
+  useEffect(() => {
+    const fetchTSData = async () => {
+      if (currOpset === undefined) {
+        return;
+      }
+      // Fetch time series data
+      const dataResp = await fetch(`/tsapi/v1/tsop/${currOpset?.id}`);
+      const data = await dataResp.json();
+      setTsData(data.data);
+    };
+
+    fetchTSData().catch(err => {
+      console.log(err.message);
+    });
+  }, [currOpset]);
+
 
   return (
     <>
@@ -309,7 +324,7 @@ function App() {
                   color: '#333'
                 }}
               />
-              {opset?.plot.map((ts) => (
+              {currOpset?.plot.map((ts) => (
                 <Line 
                   dataKey={`data.${ts}`} 
                   key={ts} 
@@ -346,8 +361,9 @@ function App() {
                 <input
                   name="offsetInput"
                   defaultValue={offset} 
-                  value={offset}
-                  onChange={onOffsetChange}
+                  //value={offset}
+                  ref={offsetRef}
+                  onChange={(e) => debouncedOffsetChange(e.target.value)}
                   style={{ 
                     padding: '6px 8px',
                     borderRadius: '4px',
@@ -371,8 +387,9 @@ function App() {
                 <input 
                   name="limitInput" 
                   defaultValue={limit} 
-                  value={limit}
-                  onChange={onLimitChange}
+                  ref={limitRef}
+                  //value={limit}
+                  onChange={(e) => debouncedLimitChange(e.target.value)}
                   style={{ 
                     padding: '6px 8px',
                     borderRadius: '4px',

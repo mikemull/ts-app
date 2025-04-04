@@ -47,7 +47,10 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
             <div style={{ 
                 fontSize: '16px',
                 fontWeight: 500,
-                color: '#333'
+                color: '#333',
+                display: 'flex',
+                gap: '8px',
+                justifyContent: 'flex-end'
             }}>
                 <Button 
                     //variant="outlined" 

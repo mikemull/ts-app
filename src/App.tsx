@@ -76,6 +76,42 @@ function App() {
     }
   };
 
+  const openDataset = (dataset: dataSet, index: number) => {
+    const newColors: { [key: string]: string } = {};
+
+    setSelectedDsetIndex(index);
+    setCurrentDataset(dataset);
+    if (dataset.ops.length > 0) {
+      setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]).concat(dataset.ops[0].plot));
+      setSelectedTimeSeries(dataset.ops[0].plot);
+      setLimit(String(dataset.ops[0].limit));
+      limitRef.current!.value = String(dataset.ops[0].limit);
+      setOffset(String(dataset.ops[0].offset));
+      offsetRef.current!.value = String(dataset.ops[0].offset);
+      setSliderLower(dataset.ops[0].offset);
+      setSliderUpper(dataset.ops[0].offset + dataset.ops[0].limit);
+      setCurrOpset(dataset.ops[0]);
+
+      let colIndex = 0;
+      for (const ts of dataset.ops[0].plot) {
+        newColors[ts] = COLORS[colIndex % COLORS.length];
+        colIndex++;
+      }
+      setColorIndex(colIndex);
+
+      setSeriesColors(newColors);
+    } else {
+      setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]));
+      setTsData([]);
+      setSelectedTimeSeries([]);
+      setLimit(String(dataset.max_length));
+      limitRef.current!.value = String(dataset.max_length);
+      setSliderUpper(dataset.max_length);
+      setSliderLower(0);
+      setOffset("0");
+    }
+  };
+
   const addDataset = (
     newDataset: dataSet
   ) => {
@@ -94,9 +130,7 @@ function App() {
       const newDatasets = datasets.filter((dset) => dset.id !== dataset_id);
       setDatasets(newDatasets);
       if (newDatasets.length > 0) {
-        setCurrentDataset(newDatasets[0]);
-        setSelectedDsetIndex(0);
-        setCurrOpset(currentDataset?.ops[0]);
+        openDataset(newDatasets[0], 0);
       } else {
         setCurrentDataset(undefined);
       }
@@ -111,45 +145,12 @@ function App() {
     index: number,
   ) => {
 
-    const newColors: { [key: string]: string } = {};
     const selectDset = datasets[index]
     setSelectedDsetIndex(index);
     setExpandedItems(["ts_col_time", "ts_col_series"]);
-    if (selectDset.ops.length > 0) {
-      console.log("selectDset.ops", selectDset.ops);
-      setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]).concat(selectDset.ops[0].plot));
-      setSelectedTimeSeries(selectDset.ops[0].plot);
-      setCurrOpset(selectDset.ops[0]);
-      setTsData([]);
+    console.log("selectDset.ops", selectDset.ops);
+    openDataset(selectDset, index);
 
-      setLimit(String(selectDset.ops[0].limit));
-      limitRef.current!.value = String(selectDset.ops[0].limit);
-      setSliderLower(selectDset.ops[0].offset);
-
-      setOffset(String(selectDset.ops[0].offset));
-      offsetRef.current!.value = String(selectDset.ops[0].offset);
-      setSliderUpper(selectDset.ops[0].offset + selectDset.ops[0].limit);
-
-      let colIndex = 0;
-      for (const ts of selectDset.ops[0].plot) {
-        newColors[ts] = COLORS[colIndex % COLORS.length];
-        colIndex++;
-      }
-      setColorIndex(colIndex);
-
-      setSeriesColors(newColors);
-    } else {
-      setSelectedItems(["ts_col_time"].concat(selectDset.timestamp_cols[0]));
-      setTsData([]);
-      setSelectedTimeSeries([]);
-      setLimit(String(selectDset.max_length));
-      limitRef.current!.value = String(selectDset.max_length);
-      setSliderUpper(selectDset.max_length);
-      setSliderLower(0);
-      setOffset("0");
-    }
-
-    setCurrentDataset(selectDset);
   }
 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
@@ -205,6 +206,7 @@ function App() {
        .then((response) => response.json())
        .then((data) => {
           setDatasets(data);
+          openDataset(data[0], 0);
        })
        .catch((err) => {
           console.log(err.message);

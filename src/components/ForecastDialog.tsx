@@ -14,9 +14,10 @@ interface ForecastDialogProps {
   handleClose: () => void;
   handleDoForecast: () => void;
   handleChangeSelectedSeries: (event: SelectChangeEvent) => void;
+  handleHorizonChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function ForecastDialog({ open, series_ids, handleClose, handleDoForecast, handleChangeSelectedSeries }: ForecastDialogProps) {
+export function ForecastDialog({ open, series_ids, handleClose, handleDoForecast, handleChangeSelectedSeries, handleHorizonChange }: ForecastDialogProps) {
   return (
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Forecast</DialogTitle>
@@ -24,7 +25,7 @@ export function ForecastDialog({ open, series_ids, handleClose, handleDoForecast
         <DialogContentText>
           Forecast the next values to the specified horizon.
         </DialogContentText>
-        <Select onChange={handleChangeSelectedSeries} fullWidth>
+        <Select onChange={handleChangeSelectedSeries} label="Series" fullWidth>
                         {series_ids.map((ts) => (
                             <MenuItem key={ts} value={ts}>
                                 {ts}
@@ -40,10 +41,7 @@ export function ForecastDialog({ open, series_ids, handleClose, handleDoForecast
           fullWidth
           variant="outlined"
           defaultValue={5}
-          onChange={(event) => {
-            // Handle horizon change
-            console.log(event.target.value);
-          }}
+          onChange={handleHorizonChange}
         />
       </DialogContent>
       <DialogActions>

@@ -32,6 +32,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
     const [open, setOpen] = React.useState(false);
     const [forecastOpen, setForecastOpen] = React.useState(false);
     const [series_id, setSeriesId] = React.useState("");
+    const [horizon, setHorizon] = React.useState(5);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -60,6 +61,16 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
         setSeriesId(event.target.value as string);
     };
 
+    const handleHorizonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        if (value) {
+            const parsedValue = parseInt(value, 10);
+            if (!isNaN(parsedValue)) {
+                setHorizon(parsedValue);
+            }
+        }
+    };
+
     const handleDoForecast = async () => {
         // Handle forecast logic here
         console.log("Forecasting...");
@@ -69,7 +80,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
             body: JSON.stringify({
               "opset_id": currentDataset?.ops[0].id,
               "series_id": series_id,
-              "horizon": 5,
+              "horizon": horizon,
             })
           });
           const jsonResp = await resp.json();
@@ -128,6 +139,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                             </MenuItem>
                         ))}
                     </Select>
+
                 </DialogContent>
                 <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>
@@ -142,6 +154,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                 handleClose={handleForecastClose}
                 handleDoForecast={handleDoForecast}
                 handleChangeSelectedSeries={handleChangeSelectedSeries}
+                handleHorizonChange={handleHorizonChange}
             />
         </React.Fragment>
     )

@@ -7,12 +7,16 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { ForecastDialog } from './ForecastDialog';
 import { dataSet } from '../types/dataset';
-
+import { tsPoint } from '../types/timeseries';
 
 interface DatasetToolProps {
   currentDataset: dataSet | undefined;
   handleDelete: (dataset_id: string) => void;
+  setForecasts: React.Dispatch<React.SetStateAction<tsPoint[]>>;
 }
 
 const buttonStyle = {
@@ -24,8 +28,10 @@ const buttonStyle = {
     }
   };
 
-export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
+export function DatasetTools({currentDataset, handleDelete, setForecasts}: DatasetToolProps) {
     const [open, setOpen] = React.useState(false);
+    const [forecastOpen, setForecastOpen] = React.useState(false);
+    const [series_id, setSeriesId] = React.useState("");
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -41,6 +47,37 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
         }
         setOpen(false);
     }
+
+    const handleForecastOpen = () => {
+        setForecastOpen(true);
+    };
+
+    const handleForecastClose = () => {
+        setForecastOpen(false);
+    };
+
+    const handleChangeSelectedSeries = (event: SelectChangeEvent) => {
+        setSeriesId(event.target.value as string);
+    };
+
+    const handleDoForecast = async () => {
+        // Handle forecast logic here
+        console.log("Forecasting...");
+        const resp = await fetch('/tsapi/v1/forecast', {
+            method: 'post',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              "opset_id": currentDataset?.ops[0].id,
+              "series_id": series_id,
+              "horizon": 5,
+            })
+          });
+          const jsonResp = await resp.json();
+          setForecasts(jsonResp.forecast);
+          console.log(jsonResp);
+
+        setForecastOpen(false);
+    };
 
     return (
         <React.Fragment>
@@ -65,7 +102,7 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
                     //variant="outlined" 
                     startIcon={<InsightsIcon/>}
                     size="small" 
-                    //onClick={handleOpenAdd}
+                    onClick={handleForecastOpen}
                     sx={{buttonStyle}}
                 >
                     Forecast
@@ -84,6 +121,13 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
                 <DialogContentText id="alert-dialog-description">
                     This will delete the dataset from storage and remove any operations or forecasts associated with it. This action cannot be undone.
                 </DialogContentText>
+                    <Select onChange={handleChangeSelectedSeries} style={{ width: 120 }}>
+                        {currentDataset?.ops[0].plot.map((ts) => (
+                            <MenuItem key={ts} value={ts}>
+                                {ts}
+                            </MenuItem>
+                        ))}
+                    </Select>
                 </DialogContent>
                 <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>
@@ -92,6 +136,13 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
                 </Button>
                 </DialogActions>
             </Dialog>
+            <ForecastDialog 
+                open={forecastOpen}
+                series_ids={currentDataset?.ops[0].plot || []}
+                handleClose={handleForecastClose}
+                handleDoForecast={handleDoForecast}
+                handleChangeSelectedSeries={handleChangeSelectedSeries}
+            />
         </React.Fragment>
     )
 }

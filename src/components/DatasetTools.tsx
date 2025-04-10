@@ -7,8 +7,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import MenuItem from '@mui/material/MenuItem';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { ForecastDialog } from './ForecastDialog';
 import { dataSet } from '../types/dataset';
 import { tsPoint } from '../types/timeseries';
@@ -102,6 +101,15 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
             }}>
                 <Button 
                     //variant="outlined" 
+                    startIcon={<InsightsIcon/>}
+                    size="small" 
+                    onClick={handleForecastOpen}
+                    sx={{buttonStyle}}
+                >
+                    Forecast
+                </Button>  
+                <Button 
+                    //variant="outlined" 
                     startIcon={<DeleteIcon />}
                     size="small" 
                     onClick={handleClickOpen}
@@ -109,15 +117,6 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                 >
                     Delete
                 </Button>
-                <Button 
-                    //variant="outlined" 
-                    startIcon={<InsightsIcon/>}
-                    size="small" 
-                    onClick={handleForecastOpen}
-                    sx={{buttonStyle}}
-                >
-                    Forecast
-                </Button>          
             </div>
             <Dialog
                 open={open}
@@ -132,14 +131,6 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                 <DialogContentText id="alert-dialog-description">
                     This will delete the dataset from storage and remove any operations or forecasts associated with it. This action cannot be undone.
                 </DialogContentText>
-                    <Select onChange={handleChangeSelectedSeries} style={{ width: 120 }}>
-                        {currentDataset?.ops[0].plot.map((ts) => (
-                            <MenuItem key={ts} value={ts}>
-                                {ts}
-                            </MenuItem>
-                        ))}
-                    </Select>
-
                 </DialogContent>
                 <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>

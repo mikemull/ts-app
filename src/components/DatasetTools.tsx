@@ -7,7 +7,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import { SelectChangeEvent } from '@mui/material/Select';
 import { ForecastDialog } from './ForecastDialog';
 import { dataSet } from '../types/dataset';
 import { tsPoint } from '../types/timeseries';
@@ -30,8 +29,6 @@ const buttonStyle = {
 export function DatasetTools({currentDataset, handleDelete, setForecasts}: DatasetToolProps) {
     const [open, setOpen] = React.useState(false);
     const [forecastOpen, setForecastOpen] = React.useState(false);
-    const [series_id, setSeriesId] = React.useState("");
-    const [horizon, setHorizon] = React.useState(5);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -56,21 +53,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
         setForecastOpen(false);
     };
 
-    const handleChangeSelectedSeries = (event: SelectChangeEvent) => {
-        setSeriesId(event.target.value as string);
-    };
-
-    const handleHorizonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
-        if (value) {
-            const parsedValue = parseInt(value, 10);
-            if (!isNaN(parsedValue)) {
-                setHorizon(parsedValue);
-            }
-        }
-    };
-
-    const handleDoForecast = async () => {
+    const doForecast = async (series_id: string, horizon: number) => {
         // Handle forecast logic here
         console.log("Forecasting...");
         const resp = await fetch('/tsapi/v1/forecast', {
@@ -143,9 +126,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                 open={forecastOpen}
                 series_ids={currentDataset?.ops[0].plot || []}
                 handleClose={handleForecastClose}
-                handleDoForecast={handleDoForecast}
-                handleChangeSelectedSeries={handleChangeSelectedSeries}
-                handleHorizonChange={handleHorizonChange}
+                doForecast={doForecast}
             />
         </React.Fragment>
     )

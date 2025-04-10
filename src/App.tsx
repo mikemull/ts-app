@@ -108,6 +108,7 @@ function App() {
       setSliderLower(0);
       setOffset("0");
     }
+    setForecasts([]);
   };
 
   const addDataset = (
@@ -359,16 +360,41 @@ function App() {
                   activeDot={{ r: 4 }}
                 />
               ))}
-              <Line
-                dataKey="data.point" 
-                key="point" 
-                dot={true} 
-                stroke="#008000"
-                strokeWidth={1}
-                name="Forecast"
-                activeDot={{ r: 4 }}
-              />
+              {forecasts.length > 0 && (
+                <Line
+                  dataKey="data.point" 
+                  key="point" 
+                  dot={true} 
+                  stroke="#008000"
+                  strokeWidth={1}
+                  name="Forecast"
+                  activeDot={{ r: 4 }}
+                />
+              )}
+              {forecasts.length > 0 && (
+                <Line
+                  dataKey="data.upper" 
+                  key="upper" 
+                  dot={true} 
+                  stroke="#800000"
+                  strokeWidth={1}
+                  name="Upper"
+                  activeDot={{ r: 4 }}
+                />
+              )}
+              {forecasts.length > 0 && (
+                <Line
+                  dataKey="data.lower" 
+                  key="lower" 
+                  dot={true} 
+                  stroke="#000080"
+                  strokeWidth={1}
+                  name="Lower"
+                  activeDot={{ r: 4 }}
+                />
+              )}
             </LineChart>
+            
           </ResponsiveContainer>
 
           <div style={chartControlsStyle}>

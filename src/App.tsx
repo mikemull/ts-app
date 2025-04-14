@@ -6,16 +6,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Slider } from 'antd';
 
 import { dataSet, opSet } from './types/dataset';
+import { tsPoint } from './types/timeseries';
 import { ImportDialog } from './components/importdialog/ImportDialog';
 import { DatasetPanel, isPlottable } from './components/DatasetPanel';
 import { DatasetTools } from './components/DatasetTools';
 
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
 
-type tsPoint = {
-  name: string
-  x: number
-};
 
 const chartContainerStyle = {
   backgroundColor: '#ffffff',
@@ -37,6 +34,7 @@ const chartControlsStyle = {
 function App() {
   const [datasets, setDatasets] = useState<dataSet[]>([]);
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
+  const [forecasts, setForecasts] = useState<tsPoint[]>([]);
   const [currentDataset, setCurrentDataset] = useState<dataSet>();
   const [currOpset, setCurrOpset] = useState<opSet>();
   const [selectedTimeSeries, setSelectedTimeSeries] = useState<string[]>([]);
@@ -110,6 +108,7 @@ function App() {
       setSliderLower(0);
       setOffset("0");
     }
+    setForecasts([]);
   };
 
   const addDataset = (
@@ -297,10 +296,10 @@ function App() {
         />
 
         <div style={chartContainerStyle}>
-          <DatasetTools currentDataset={currentDataset} handleDelete={deleteDataset}/>
+          <DatasetTools currentDataset={currentDataset} handleDelete={deleteDataset} setForecasts={setForecasts}/>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart 
-              data={tsdata}
+              data={[...tsdata, ...forecasts]}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -356,12 +355,46 @@ function App() {
                   key={ts} 
                   dot={false} 
                   stroke={seriesColors[ts] || COLORS[0]}
-                  strokeWidth={2}
+                  strokeWidth={1}
                   name={ts}
                   activeDot={{ r: 4 }}
                 />
               ))}
+              {forecasts.length > 0 && (
+                <Line
+                  dataKey="data.point" 
+                  key="point" 
+                  dot={true} 
+                  stroke="#008000"
+                  strokeWidth={1}
+                  name="Forecast"
+                  activeDot={{ r: 4 }}
+                />
+              )}
+              {forecasts.length > 0 && (
+                <Line
+                  dataKey="data.upper" 
+                  key="upper" 
+                  dot={true} 
+                  stroke="#800000"
+                  strokeWidth={1}
+                  name="Upper"
+                  activeDot={{ r: 4 }}
+                />
+              )}
+              {forecasts.length > 0 && (
+                <Line
+                  dataKey="data.lower" 
+                  key="lower" 
+                  dot={true} 
+                  stroke="#000080"
+                  strokeWidth={1}
+                  name="Lower"
+                  activeDot={{ r: 4 }}
+                />
+              )}
             </LineChart>
+            
           </ResponsiveContainer>
 
           <div style={chartControlsStyle}>

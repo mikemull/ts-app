@@ -7,12 +7,14 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import { ForecastDialog } from './ForecastDialog';
 import { dataSet } from '../types/dataset';
-
+import { tsPoint } from '../types/timeseries';
 
 interface DatasetToolProps {
   currentDataset: dataSet | undefined;
   handleDelete: (dataset_id: string) => void;
+  setForecasts: React.Dispatch<React.SetStateAction<tsPoint[]>>;
 }
 
 const buttonStyle = {
@@ -24,8 +26,9 @@ const buttonStyle = {
     }
   };
 
-export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
+export function DatasetTools({currentDataset, handleDelete, setForecasts}: DatasetToolProps) {
     const [open, setOpen] = React.useState(false);
+    const [forecastOpen, setForecastOpen] = React.useState(false);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -42,6 +45,33 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
         setOpen(false);
     }
 
+    const handleForecastOpen = () => {
+        setForecastOpen(true);
+    };
+
+    const handleForecastClose = () => {
+        setForecastOpen(false);
+    };
+
+    const doForecast = async (series_id: string, horizon: number) => {
+        // Handle forecast logic here
+        console.log("Forecasting...");
+        const resp = await fetch('/tsapi/v1/forecast', {
+            method: 'post',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              "opset_id": currentDataset?.ops[0].id,
+              "series_id": series_id,
+              "horizon": horizon,
+            })
+          });
+          const jsonResp = await resp.json();
+          setForecasts(jsonResp.forecast);
+          console.log(jsonResp);
+
+        setForecastOpen(false);
+    };
+
     return (
         <React.Fragment>
             <div style={{ 
@@ -54,6 +84,15 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
             }}>
                 <Button 
                     //variant="outlined" 
+                    startIcon={<InsightsIcon/>}
+                    size="small" 
+                    onClick={handleForecastOpen}
+                    sx={{buttonStyle}}
+                >
+                    Forecast
+                </Button>  
+                <Button 
+                    //variant="outlined" 
                     startIcon={<DeleteIcon />}
                     size="small" 
                     onClick={handleClickOpen}
@@ -61,15 +100,6 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
                 >
                     Delete
                 </Button>
-                <Button 
-                    //variant="outlined" 
-                    startIcon={<InsightsIcon/>}
-                    size="small" 
-                    //onClick={handleOpenAdd}
-                    sx={{buttonStyle}}
-                >
-                    Forecast
-                </Button>          
             </div>
             <Dialog
                 open={open}
@@ -92,6 +122,12 @@ export function DatasetTools({currentDataset, handleDelete}: DatasetToolProps) {
                 </Button>
                 </DialogActions>
             </Dialog>
+            <ForecastDialog 
+                open={forecastOpen}
+                series_ids={currentDataset?.ops[0].plot || []}
+                handleClose={handleForecastClose}
+                doForecast={doForecast}
+            />
         </React.Fragment>
     )
 }

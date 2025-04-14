@@ -97,7 +97,7 @@ const panelStyle = {
   backgroundColor: '#f8f9fa',
   borderRadius: '8px',
   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  margin: '20px',
+  margin: '10px',
   width: '300px',
   display: 'flex',
   flexDirection: 'column' as const,
@@ -227,7 +227,7 @@ export function DatasetPanel({
             slots={{ item: CustomTreeItem }}
             sx={{
               '& .MuiTreeItem-label': {
-                fontSize: '14px',
+                fontSize: '0.750rem',
                 fontWeight: 500,
                 color: '#333'
               },

@@ -4,6 +4,8 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from 'antd';
+import Box from '@mui/material/Box';
+import LinearProgress from '@mui/material/LinearProgress';
 
 import { dataSet, opSet } from './types/dataset';
 import { tsPoint } from './types/timeseries';
@@ -13,12 +15,12 @@ import { DatasetTools } from './components/DatasetTools';
 
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
 
-
 const chartContainerStyle = {
   backgroundColor: '#ffffff',
   borderRadius: '8px',
   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  margin: '20px',
+  marginTop: '10px',
+  marginBottom: '10px',
   padding: '20px',
   flex: 1
 };
@@ -49,6 +51,7 @@ function App() {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [seriesColors, setSeriesColors] = useState<{ [key: string]: string }>({});
   const [colorIndex, setColorIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
   const limitRef = useRef<HTMLInputElement>(null);
   const offsetRef = useRef<HTMLInputElement>(null);
 
@@ -264,6 +267,7 @@ function App() {
 
   useEffect(() => {
     const fetchTSData = async () => {
+      setLoading(true);
       if (currOpset === undefined) {
         return;
       }
@@ -271,6 +275,7 @@ function App() {
       const dataResp = await fetch(`/tsapi/v1/tsop/${currOpset?.id}`);
       const data = await dataResp.json();
       setTsData(data.data);
+      setLoading(false);
     };
 
     fetchTSData().catch(err => {
@@ -297,7 +302,7 @@ function App() {
 
         <div style={chartContainerStyle}>
           <DatasetTools currentDataset={currentDataset} handleDelete={deleteDataset} setForecasts={setForecasts}/>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={500}>
             <LineChart 
               data={[...tsdata, ...forecasts]}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -396,7 +401,11 @@ function App() {
             </LineChart>
             
           </ResponsiveContainer>
-
+          {loading && 
+            <Box sx={{ width: '100%' }}>
+              <LinearProgress />
+            </Box>
+          }
           <div style={chartControlsStyle}>
             <Slider 
               range={{ draggableTrack: true }}

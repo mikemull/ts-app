@@ -132,6 +132,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
   const [file, setFile] = useState<File | null>(null);
   const [modalData, setModalData] = useState<DatasetModalData>({ dataset_name: '', filepath: ''});
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -149,6 +150,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
     if (file) {
       event.preventDefault();
       console.log('Uploading file...');
+      setUploading(true);
 
       try {
         // First, get the signed URL from your backend
@@ -211,6 +213,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
 
         const data = await result.json();
         addDataset(data as dataSet);
+        setUploading(false);
         onClose();
       } catch (error) {
         console.error('Upload error:', error);
@@ -301,6 +304,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
               }
             }}
             variant="contained"
+            loading={uploading}
             disabled={!file || !modalData.dataset_name}
           >
             {uploadType === 'import' ? 'Import' : 'Add'}

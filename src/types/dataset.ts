@@ -18,4 +18,5 @@ export type dataSet = {
     max_length: number
     ops: opSet[]
     opset: opSet
+    conditions: string[]
   };

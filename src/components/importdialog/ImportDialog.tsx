@@ -207,6 +207,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, uploadType, on
         });
 
         if (!result.ok) {
+          setUploading(false);
           const error = await result.json();
           throw new Error(`HTTP error! status: ${result.status} - ${error.detail}`);
         }

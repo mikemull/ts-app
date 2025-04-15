@@ -2,6 +2,7 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InsightsIcon from '@mui/icons-material/Insights';
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -82,6 +83,14 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                 gap: '8px',
                 justifyContent: 'flex-end'
             }}>
+                <Button 
+                    startIcon={<FilterAltOutlinedIcon/>}
+                    size="small" 
+                    onClick={handleForecastOpen}
+                    sx={{buttonStyle}}
+                >
+                    Filter
+                </Button> 
                 <Button 
                     //variant="outlined" 
                     startIcon={<InsightsIcon/>}

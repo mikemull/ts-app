@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Slider } from 'antd';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
+import ErrorOutlinedIcon from '@mui/icons-material/ErrorOutlined';
 
 import { dataSet, opSet } from './types/dataset';
 import { tsPoint } from './types/timeseries';
@@ -470,6 +471,12 @@ function App() {
                 />
               </label>
             </div>
+            {currentDataset?.conditions.map(cond => (
+                <div key={cond} style={{display: 'flex', alignItems: 'center'}}>
+                  <ErrorOutlinedIcon/> 
+                  <p style={{color: '#333', fontSize: '0.75rem', padding: '5px'}}>{cond}</p>
+                </div>
+            ))}
           </div>            
         </div>
       </div>

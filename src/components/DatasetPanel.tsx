@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { TreeViewBaseItem } from '@mui/x-tree-view/models';
 import { TreeItem2, TreeItem2Props } from '@mui/x-tree-view/TreeItem2';
 import { useTreeItem2Utils } from '@mui/x-tree-view/hooks';
@@ -16,10 +18,8 @@ interface DatasetPanelProps {
   currentDataset: dataSet | undefined;
   selectedDsetIndex: number;
   selectedItems: string[];
-  expandedItems: string[];
   onDatasetClick: (event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => void;
   onTreeClick: (event: React.SyntheticEvent, itemIds: string[]) => void;
-  handleExpandedItemsChange: (event: React.SyntheticEvent, itemIds: string[]) => void;
   handleOpenAdd: () => void;
   handleOpenImport: () => void;
 }
@@ -119,13 +119,20 @@ export function DatasetPanel({
   currentDataset,
   selectedDsetIndex,
   selectedItems,
-  expandedItems,
   onDatasetClick,
   onTreeClick,
-  handleExpandedItemsChange,
   handleOpenAdd,
   handleOpenImport
 }: DatasetPanelProps) {
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  const handleExpandedItemsChange = (
+    _: React.SyntheticEvent,
+    itemIds: string[],
+  ) => {
+    setExpandedItems(itemIds);
+  };
+
   return (
     <div style={panelStyle}>
       <div style={headerStyle}>

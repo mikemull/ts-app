@@ -49,7 +49,6 @@ function App() {
   const [addVisible, setAddVisible] = useState(false);
   const [importVisible, setImportVisible] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [seriesColors, setSeriesColors] = useState<{ [key: string]: string }>({});
   const [colorIndex, setColorIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -150,7 +149,6 @@ function App() {
 
     const selectDset = datasets[index]
     setSelectedDsetIndex(index);
-    setExpandedItems(["ts_col_time", "ts_col_series"]);
     console.log("selectDset.ops", selectDset.ops);
     openDataset(selectDset, index);
 
@@ -159,7 +157,6 @@ function App() {
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
     const tsIds: string[] = [];
 
-    console.log(itemIds);
     const selSet = new Set<string>(itemIds);
 
     for (const item of itemIds) {
@@ -195,13 +192,6 @@ function App() {
     // delay in ms
     1000
   );
-
-  const handleExpandedItemsChange = (
-    _: React.SyntheticEvent,
-    itemIds: string[],
-  ) => {
-    setExpandedItems(itemIds);
-  };
 
   // Get all of the datasets
   useEffect(() => {
@@ -293,10 +283,8 @@ function App() {
           currentDataset={currentDataset}
           selectedDsetIndex={selectedDsetIndex}
           selectedItems={selectedItems}
-          expandedItems={expandedItems}
           onDatasetClick={onDatasetClick}
           onTreeClick={onTreeClick}
-          handleExpandedItemsChange={handleExpandedItemsChange}
           handleOpenAdd={handleOpenAdd}
           handleOpenImport={handleOpenImport}
         />

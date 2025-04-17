@@ -3,6 +3,7 @@ import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InsightsIcon from '@mui/icons-material/Insights';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
+import CameraIcon from '@mui/icons-material/Camera';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -54,6 +55,11 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
         setForecastOpen(false);
     };
 
+    const handleSnapshot = () => {
+        // Handle snapshot logic here
+        console.log("Taking snapshot...");
+    };
+
     const doForecast = async (series_id: string, horizon: number) => {
         // Handle forecast logic here
         console.log("Forecasting...");
@@ -92,6 +98,15 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                 >
                     Filter
                 </Button> 
+                <Button 
+                    startIcon={<CameraIcon/>}
+                    size="small" 
+                    onClick={handleSnapshot}
+                    sx={{buttonStyle}}
+                    disabled={false}
+                >
+                    Snapshot
+                </Button>                 
                 <Button 
                     //variant="outlined" 
                     startIcon={<InsightsIcon/>}

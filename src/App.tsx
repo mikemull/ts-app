@@ -2,7 +2,7 @@ import { useState, useEffect, useRef} from 'react'
 import './App.css'
 import { useDebouncedCallback } from 'use-debounce';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { Slider } from 'antd';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -339,6 +339,7 @@ function App() {
                   color: '#333'
                 }}
               />
+              <Brush dataKey="timestamp" startIndex={0} height={30} stroke="#8884d8" />
               {currOpset?.series_ids.map((ts) => (
                 <Line 
                   dataKey={`data.${ts}`} 

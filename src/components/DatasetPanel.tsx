@@ -16,7 +16,6 @@ import { dataSet } from '../types/dataset';
 interface DatasetPanelProps {
   datasets: dataSet[];
   currentDataset: dataSet | undefined;
-  selectedDsetIndex: number;
   selectedItems: string[];
   onDatasetClick: (event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => void;
   onTreeClick: (event: React.SyntheticEvent, itemIds: string[]) => void;
@@ -117,7 +116,6 @@ const headerStyle = {
 export function DatasetPanel({
   datasets,
   currentDataset,
-  selectedDsetIndex,
   selectedItems,
   onDatasetClick,
   onTreeClick,
@@ -125,12 +123,21 @@ export function DatasetPanel({
   handleOpenImport
 }: DatasetPanelProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const handleExpandedItemsChange = (
     _: React.SyntheticEvent,
     itemIds: string[],
   ) => {
     setExpandedItems(itemIds);
+  };
+
+  const handleListItemClick = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    index: number,
+  ) => {
+    setSelectedIndex(index);
+    onDatasetClick(event, index);
   };
 
   return (
@@ -215,7 +222,7 @@ export function DatasetPanel({
           }}>
             {datasets.map((ds, idx) =>
               <ListItem disablePadding key={idx}>
-                <ListItemButton onClick={(event) => {onDatasetClick(event, idx)}} selected={selectedDsetIndex === idx}>
+                <ListItemButton onClick={(event) => {handleListItemClick(event, idx)}} selected={selectedIndex === idx}>
                   <ListItemText primary={ds.name}/>
                 </ListItemButton>
               </ListItem>

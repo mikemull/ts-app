@@ -41,7 +41,6 @@ function App() {
   const [currentDataset, setCurrentDataset] = useState<dataSet>();
   const [currOpset, setCurrOpset] = useState<opSet>();
   const [selectedTimeSeries, setSelectedTimeSeries] = useState<string[]>([]);
-  const [selectedDsetIndex, setSelectedDsetIndex] = useState(0);
   const [offset, setOffset] = useState('0');
   const [limit, setLimit] = useState('1000');
   const [sliderUpper, setSliderUpper] = useState(1000);
@@ -77,10 +76,9 @@ function App() {
     }
   };
 
-  const openDataset = (dataset: dataSet, index: number) => {
+  const openDataset = (dataset: dataSet) => {
     const newColors: { [key: string]: string } = {};
 
-    setSelectedDsetIndex(index);
     setCurrentDataset(dataset);
     if (dataset.ops.length > 0) {
       setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]).concat(dataset.ops[0].series_ids));
@@ -132,7 +130,7 @@ function App() {
       const newDatasets = datasets.filter((dset) => dset.id !== dataset_id);
       setDatasets(newDatasets);
       if (newDatasets.length > 0) {
-        openDataset(newDatasets[0], 0);
+        openDataset(newDatasets[0]);
       } else {
         setCurrentDataset(undefined);
       }
@@ -148,9 +146,8 @@ function App() {
   ) => {
 
     const selectDset = datasets[index]
-    setSelectedDsetIndex(index);
     console.log("selectDset.ops", selectDset.ops);
-    openDataset(selectDset, index);
+    openDataset(selectDset);
 
   }
 
@@ -199,7 +196,7 @@ function App() {
        .then((response) => response.json())
        .then((data) => {
           setDatasets(data);
-          openDataset(data[0], 0);
+          openDataset(data[0]);
        })
        .catch((err) => {
           console.log(err.message);
@@ -281,7 +278,6 @@ function App() {
         <DatasetPanel 
           datasets={datasets}
           currentDataset={currentDataset}
-          selectedDsetIndex={selectedDsetIndex}
           selectedItems={selectedItems}
           onDatasetClick={onDatasetClick}
           onTreeClick={onTreeClick}

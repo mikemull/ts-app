@@ -84,8 +84,8 @@ function App() {
     setSelectedDsetIndex(index);
     setCurrentDataset(dataset);
     if (dataset.ops.length > 0) {
-      setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]).concat(dataset.ops[0].plot));
-      setSelectedTimeSeries(dataset.ops[0].plot);
+      setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]).concat(dataset.ops[0].series_ids));
+      setSelectedTimeSeries(dataset.ops[0].series_ids);
       setLimit(String(dataset.ops[0].limit));
       limitRef.current!.value = String(dataset.ops[0].limit);
       setOffset(String(dataset.ops[0].offset));
@@ -95,7 +95,7 @@ function App() {
       setCurrOpset(dataset.ops[0]);
 
       let colIndex = 0;
-      for (const ts of dataset.ops[0].plot) {
+      for (const ts of dataset.ops[0].series_ids) {
         newColors[ts] = COLORS[colIndex % COLORS.length];
         colIndex++;
       }
@@ -231,7 +231,7 @@ function App() {
           body: JSON.stringify({
             "id": "0",
             "dataset_id": currentDataset.id,
-            "plot": selectedTimeSeries,
+            "series_ids": selectedTimeSeries,
             "offset": Number(offset),
             "limit": Number(limit)
           })
@@ -248,7 +248,7 @@ function App() {
           body: JSON.stringify({
             "id": currentDataset.ops[0].id,
             "dataset_id": currentDataset.id,
-            "plot": selectedTimeSeries,
+            "series_ids": selectedTimeSeries,
             "offset": Number(offset),
             "limit": Number(limit)
           })
@@ -355,7 +355,7 @@ function App() {
                   color: '#333'
                 }}
               />
-              {currOpset?.plot.map((ts) => (
+              {currOpset?.series_ids.map((ts) => (
                 <Line 
                   dataKey={`data.${ts}`} 
                   key={ts} 
@@ -408,6 +408,7 @@ function App() {
             </Box>
           }
           <div style={chartControlsStyle}>
+            <p style={{ fontSize: '12px', fontWeight: 500, color: '#333' }}>{currentDataset?.name}</p>
             <Slider 
               range={{ draggableTrack: true }}
               min={0}

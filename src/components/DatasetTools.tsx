@@ -88,6 +88,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
                     size="small" 
                     onClick={handleForecastOpen}
                     sx={{buttonStyle}}
+                    disabled={true}
                 >
                     Filter
                 </Button> 
@@ -133,7 +134,7 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
             </Dialog>
             <ForecastDialog 
                 open={forecastOpen}
-                series_ids={currentDataset && currentDataset.ops.length > 0 && currentDataset.ops[0].plot || []}
+                series_ids={currentDataset && currentDataset.ops.length > 0 && currentDataset.ops[0].series_ids || []}
                 handleClose={handleForecastClose}
                 doForecast={doForecast}
             />

@@ -2,7 +2,7 @@
 export type opSet = {
     id: string
     dataset_id: string
-    plot: string[]
+    series_ids: string[]
     offset: number
     limit: number
   };

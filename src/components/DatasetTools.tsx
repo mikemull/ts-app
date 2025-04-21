@@ -16,6 +16,7 @@ import { tsPoint } from '../types/timeseries';
 interface DatasetToolProps {
   currentDataset: dataSet | undefined;
   handleDelete: (dataset_id: string) => void;
+  handleSnapshot: () => void;
   setForecasts: React.Dispatch<React.SetStateAction<tsPoint[]>>;
 }
 
@@ -28,7 +29,7 @@ const buttonStyle = {
     }
   };
 
-export function DatasetTools({currentDataset, handleDelete, setForecasts}: DatasetToolProps) {
+export function DatasetTools({currentDataset, handleDelete, handleSnapshot, setForecasts}: DatasetToolProps) {
     const [open, setOpen] = React.useState(false);
     const [forecastOpen, setForecastOpen] = React.useState(false);
 
@@ -53,11 +54,6 @@ export function DatasetTools({currentDataset, handleDelete, setForecasts}: Datas
 
     const handleForecastClose = () => {
         setForecastOpen(false);
-    };
-
-    const handleSnapshot = () => {
-        // Handle snapshot logic here
-        console.log("Taking snapshot...");
     };
 
     const doForecast = async (series_id: string, horizon: number) => {

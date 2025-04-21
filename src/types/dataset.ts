@@ -5,6 +5,7 @@ export type opSet = {
     series_ids: string[]
     offset: number
     limit: number
+    max_index: number
   };
   
   

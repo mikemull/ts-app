@@ -14,6 +14,16 @@ import { ImportDialog } from './components/importdialog/ImportDialog';
 import { DatasetPanel, isPlottable } from './components/DatasetPanel';
 import { DatasetTools } from './components/DatasetTools';
 
+
+type DatasetView = {
+  dataset: dataSet;
+  offset: number;
+  limit: number;
+  maxIndex: number;
+  limitRef: React.RefObject<HTMLInputElement>;
+  offsetRef: React.RefObject<HTMLInputElement>;
+}
+
 const COLORS = ["red", "blue", "gray", "orange", "green", "purple", "yellow", "black"];
 
 const chartContainerStyle = {
@@ -39,10 +49,18 @@ function App() {
   const [tsdata, setTsData] = useState<tsPoint[]>([]);
   const [forecasts, setForecasts] = useState<tsPoint[]>([]);
   const [currentDataset, setCurrentDataset] = useState<dataSet>();
+  const [currentView, setCurrentView] = useState<DatasetView>({
+    dataset: {} as dataSet,
+    offset: 0,
+    limit: 1000,
+    maxIndex: 1000,
+    limitRef: useRef<HTMLInputElement>(null),
+    offsetRef: useRef<HTMLInputElement>(null)
+  });
   const [currOpset, setCurrOpset] = useState<opSet>();
   const [selectedTimeSeries, setSelectedTimeSeries] = useState<string[]>([]);
-  const [offset, setOffset] = useState('0');
-  const [limit, setLimit] = useState('1000');
+  // We mantain these separately so that we can set the slider values without
+  // triggering an opset update
   const [sliderUpper, setSliderUpper] = useState(1000);
   const [sliderLower, setSliderLower] = useState(0);
   const [addVisible, setAddVisible] = useState(false);
@@ -69,10 +87,13 @@ function App() {
   
   const onRangeChangeComplete = (value: number | number[]) => {
     if (Array.isArray(value)) {
-      setLimit(String(sliderUpper - sliderLower));
       limitRef.current!.value = String(value[1] - value[0]);
-      setOffset(String(sliderLower));
       offsetRef.current!.value = String(value[0]);
+      setCurrentView({
+        ...currentView,
+        offset: value[0],
+        limit: value[1] - value[0],
+      })
     }
   };
 
@@ -83,14 +104,20 @@ function App() {
     if (dataset.ops.length > 0) {
       setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]).concat(dataset.ops[0].series_ids));
       setSelectedTimeSeries(dataset.ops[0].series_ids);
-      setLimit(String(dataset.ops[0].limit));
       limitRef.current!.value = String(dataset.ops[0].limit);
-      setOffset(String(dataset.ops[0].offset));
       offsetRef.current!.value = String(dataset.ops[0].offset);
       setSliderLower(dataset.ops[0].offset);
       setSliderUpper(dataset.ops[0].offset + dataset.ops[0].limit);
       setCurrOpset(dataset.ops[0]);
 
+      setCurrentView({
+        dataset: dataset,
+        offset: dataset.ops[0].offset,
+        limit: dataset.ops[0].limit,
+        maxIndex: dataset.max_length,
+        limitRef: limitRef,
+        offsetRef: offsetRef});
+      
       let colIndex = 0;
       for (const ts of dataset.ops[0].series_ids) {
         newColors[ts] = COLORS[colIndex % COLORS.length];
@@ -103,11 +130,18 @@ function App() {
       setSelectedItems(["ts_col_time"].concat(dataset.timestamp_cols[0]));
       setTsData([]);
       setSelectedTimeSeries([]);
-      setLimit(String(dataset.max_length));
       limitRef.current!.value = String(dataset.max_length);
-      setSliderUpper(dataset.max_length);
       setSliderLower(0);
-      setOffset("0");
+      setSliderUpper(dataset.max_length);
+
+      setCurrentView({
+        dataset: dataset,
+        offset: 0,
+        limit: dataset.max_length,
+        maxIndex: dataset.max_length,
+        limitRef: limitRef,
+        offsetRef: offsetRef});
+
     }
     setForecasts([]);
   };
@@ -151,6 +185,20 @@ function App() {
 
   }
 
+  const handleSnapshot = () => {
+    // Handle snapshot logic here
+    console.log("Taking snapshot...");
+    // Reset slicer limits
+    const currentView = currentDataset?.ops[0];
+    if (currentView) {
+      setSliderUpper(currentView.limit);
+      limitRef.current!.value = String(currentView.limit);
+      setSliderLower(0);
+      offsetRef.current!.value = "0";
+    }
+
+  };
+ 
   function onTreeClick(_: React.SyntheticEvent, itemIds: string[]) {
     const tsIds: string[] = [];
 
@@ -174,8 +222,10 @@ function App() {
 
   const debouncedOffsetChange = useDebouncedCallback(
     (value) => {
-      setSliderLower(Number(value));
-      setOffset(value);
+      setCurrentView({
+        ...currentView,
+        offset: Number(value)
+      });
     },
     // delay in ms
     1000
@@ -183,8 +233,10 @@ function App() {
 
   const debouncedLimitChange = useDebouncedCallback(
     (value) => {
-      setSliderUpper(Number(sliderLower) + Number(value));
-      setLimit(value);
+      setCurrentView({
+        ...currentView,
+        limit: Number(value)
+      });
     },
     // delay in ms
     1000
@@ -219,8 +271,8 @@ function App() {
             "id": "0",
             "dataset_id": currentDataset.id,
             "series_ids": selectedTimeSeries,
-            "offset": Number(offset),
-            "limit": Number(limit)
+            "offset": Number(currentView.offset),
+            "limit": Number(currentView.limit)
           })
         });
         const jsonResp = await resp.json();
@@ -236,8 +288,8 @@ function App() {
             "id": currentDataset.ops[0].id,
             "dataset_id": currentDataset.id,
             "series_ids": selectedTimeSeries,
-            "offset": Number(offset),
-            "limit": Number(limit)
+            "offset": Number(currentView.offset),
+            "limit": Number(currentView.limit)
           })
         });
         const jsonResp = await resp.json();
@@ -250,7 +302,7 @@ function App() {
     updateOpsetAndFetchData().catch(err => {
       console.log(err.message);
     });
-  }, [currentDataset, offset, limit, selectedTimeSeries]);
+  }, [currentDataset, currentView.offset, currentView.limit, selectedTimeSeries]);
 
 
   useEffect(() => {
@@ -286,7 +338,7 @@ function App() {
         />
 
         <div style={chartContainerStyle}>
-          <DatasetTools currentDataset={currentDataset} handleDelete={deleteDataset} setForecasts={setForecasts}/>
+          <DatasetTools currentDataset={currentDataset} handleDelete={deleteDataset} handleSnapshot={handleSnapshot} setForecasts={setForecasts}/>
           <ResponsiveContainer width="100%" height={500}>
             <LineChart 
               data={[...tsdata, ...forecasts]}
@@ -397,8 +449,8 @@ function App() {
             <Slider 
               range={{ draggableTrack: true }}
               min={0}
-              max={currentDataset?.max_length}
-              defaultValue={[Number(offset), Number(limit)]} 
+              max={currentView.maxIndex}
+              defaultValue={[currentView.offset, currentView.maxIndex]} 
               value={[sliderLower, sliderUpper]} 
               onChange={onRangeChange}
               onChangeComplete={onRangeChangeComplete}
@@ -415,7 +467,7 @@ function App() {
                 Offset:
                 <input
                   name="offsetInput"
-                  defaultValue={offset} 
+                  defaultValue={currentView.offset} 
                   //value={offset}
                   ref={offsetRef}
                   onChange={(e) => debouncedOffsetChange(e.target.value)}
@@ -441,7 +493,7 @@ function App() {
                 Limit:
                 <input 
                   name="limitInput" 
-                  defaultValue={limit} 
+                  defaultValue={currentView.limit} 
                   ref={limitRef}
                   //value={limit}
                   onChange={(e) => debouncedLimitChange(e.target.value)}

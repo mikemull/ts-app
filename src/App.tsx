@@ -63,12 +63,15 @@ function App() {
   // triggering an opset update
   const [sliderUpper, setSliderUpper] = useState(1000);
   const [sliderLower, setSliderLower] = useState(0);
+
   const [addVisible, setAddVisible] = useState(false);
   const [importVisible, setImportVisible] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [seriesColors, setSeriesColors] = useState<{ [key: string]: string }>({});
   const [colorIndex, setColorIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // So we can update these without triggering a rerender
   const limitRef = useRef<HTMLInputElement>(null);
   const offsetRef = useRef<HTMLInputElement>(null);
 
